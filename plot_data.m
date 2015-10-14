@@ -31,7 +31,7 @@ for j = 1:length(weeks);
 end
 
 % Compares the daily direct and indirect deaths
-%plot(days,[direct_deaths indirect_deaths])
+plot(days,[direct_deaths indirect_deaths])
 
 % Compares the weekly direct and indirect deaths
-%plot(weeks,[direct_weekly indirect_weekly])
+plot(weeks,[direct_weekly indirect_weekly])
