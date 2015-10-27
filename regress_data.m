@@ -13,7 +13,7 @@ days = transpose([1:length(direct_deaths)]);
 
 % Sampling the data to obtain a smaller number of points 'newlength' is the
 % number of sample points you want to obtain. Max = 731
-newlength = 25;
+newlength = 20;
 
 % Setting out the vectors to be filled by the sampled points
 direct_sampled = zeros(newlength,1);
@@ -71,7 +71,7 @@ for i = 1:2
                 
                 % Find the local minima of 1/liklelihood function
                 val = fmincon(test(i),[mean(i),h(j),lambda(k),noise(m)]...
-                    ,[],[],[],[],[0,0,0,0],[30,50,700,0.1],[],options);
+                    ,[],[],[],[],[0,0,0,0],[30,50,700,1],[],options);
                 
                 % Work out the resulting likelihood for the chosen
                 % hyperparameters
@@ -105,7 +105,7 @@ covb2 = cov_matrix(t,t,a(2,2),a(2,3),a(2,4)); % Indirect " "
 
 % Because this would otherwise be worked out twice
 icovb1 = covb1\eye(size(covb1));
-icovb2 = covb1\eye(size(covb1));
+icovb2 = covb2\eye(size(covb2));
 
 % The predicted GP means for direct and indirect data streams
 mean_direct = a(1,1)*ones(length(x2),1) + ...
@@ -164,6 +164,8 @@ hold on
 plot(x2,[mean_direct])                % Plots the predicted mean
 hold on
 plot((t+(test_offset-inte)),[direct_test],'o')
+hold on
+plot(t,y(:,1),'x')
 title('Direct Fire Incidents')
 xlabel('Time /Days')
 ylabel('Incidents')
@@ -175,6 +177,8 @@ hold on
 plot(x2,[mean_indirect])
 hold on
 plot((t+(test_offset-inte)),[direct_test],'o')
+hold on
+plot(t,y(:,2),'x')
 title('Indirect Fire Incidents')
 xlabel('Time /Days')
 ylabel('Incidents')
@@ -192,7 +196,7 @@ cov2 = cov_matrix(t,t,a(2,2),a(2,3),a(2,4));
 
 % Chosing ranges to plot
 mean = [a(1,1)-30:0.1:a(1,1)+30];
-h = [1:0.1:50];
+h = [1:0.1:30];
 lambda = [1:0.1:300];
 noise = [0:0.01:30];
 
@@ -280,17 +284,17 @@ title('Likelihood for Varying \sigma ^2')
     end
 
 % Predictably this one tests the indirect fire stream
-    function l = test_i(x)
+    function l = test_i(z)
         % Input x - a vector [mean, h, lambda, noise variance]
         
-        cov = cov_matrix(t,t,x(2),x(3),x(4));
+        cov = cov_matrix(t,t,z(2),z(3),z(4));
         
         mag = det(cov);         % Determinant of covariance
         p = length(cov);        % Number of input variables
         
         % A vector of the difference between the output values and the
         % given mean
-        d = y(:,2)-x(1)*ones(p,1);
+        d = y(:,2)-z(1)*ones(p,1);
 
         % Second two terms of log-likelihood
         l = -(1/2)*log(mag)-(1/2)*transpose(d)*(cov\eye(p,p))*d;
