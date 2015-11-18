@@ -1,4 +1,4 @@
-function regress_data
+function gp_regression
 
 % Importing the no. of deaths / day data
 direct_deaths = csvread('Data/Direct Frequencies.csv');
