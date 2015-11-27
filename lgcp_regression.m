@@ -18,6 +18,7 @@ indirect_sampled = zeros(newlength,1);
 % Working out the necessary sampling frequency
 inte = floor(length(direct_deaths)/newlength);
 
+
 % Filling the sampled vector
 for i = 1:newlength
     direct_sampled(i) = direct_deaths(i*inte);
@@ -29,6 +30,9 @@ t = [inte:inte:length(direct_deaths)];
 if length(t) >= newlength + 1
     t = t(1:newlength);
 end
+
+%x2 = t - round(inte/2);
+x2 = t;
 
 y = [direct_sampled,indirect_sampled];
 
@@ -58,10 +62,34 @@ options = optimoptions('fminunc','Algorithm','trust-region','GradObj','on');
 options.Display = 'off';
 options2 = optimset('Display', 'off');
 
-% Set up the initial guess for the hyperparameters
+% Set up the initial guess for the hyperparameters 
 h = [3;3];
 l = [100;85];
 
+for q = 1:2
+    n = 0;
+    best = 0;
+    s = [2,2]*10^-4;
+    
+    s_final(q) = s(q); 
+    
+    [x,fval] = fminunc(@product,[log(h(q));log(l(q));logy(:,q)],options);
+    
+    h_final(q) = exp(x(1)); 
+
+    l_final(q) = exp(x(2));
+
+    v_final(:,q) = x(3:end);
+
+    % Calculating the variance terms
+    variance(:,q) = hessian_diag(v_final(:,q));
+        
+end
+
+h_final
+l_final
+s_final
+%{
 for q = 1:2
     
     % Setting the hyper parameters to the starting point
@@ -84,7 +112,7 @@ for q = 1:2
     variance(:,q) = hessian_diag(v_final);
 
 end   
-
+%}
 % The vector of predicted numbers of incidents
 counts = exp(v_final);
 
@@ -105,7 +133,7 @@ end
 % {
 
 % Setting up vectors for the shade function
-X = [t,fliplr(t)];
+X = [x2,fliplr(x2)];
 Y1 = [mean_minus(1,:),fliplr(mean_plus(1,:))];
 Y2 = [mean_minus(2,:),fliplr(mean_plus(2,:))];
 
@@ -116,7 +144,7 @@ shade = fill(X,Y1,'r');               % Fills the confidence region
 set(shade,'facealpha',.2)             % Sets the region transparent
 set(shade,'EdgeColor','None')
 hold on
-plot(t,exp(v_final(:,1)))             % Plots the predicted mean values
+plot(x2,exp(v_final(:,1)))             % Plots the predicted mean values
 hold on
 plot(t,y(:,1),'x');                   % Plots the training data
 
@@ -126,14 +154,18 @@ shade2 = fill(X,Y2,'r');
 set(shade2,'facealpha',.2)           
 set(shade2,'EdgeColor','None')
 hold on
-plot(t,exp(v_final(:,2)))
+plot(x2,exp(v_final(:,2)))
 hold on
 plot(t,y(:,2),'x');
+
+p = posterior(v_final(:,1))
 
 %}
 %-------------------------------
 % END OF MODEL PLOTTING SECTION
 %-------------------------------
+
+
 
 %-------------------------------------------------------
 % START OF HYPER-PARAMETERS LIKELIHOOD PLOTTING SECTION
@@ -185,10 +217,15 @@ semilogy(n,n_test)
 % Function which calculates selected terms of the posterior numerator. It
 % takes the values for poisson rate as inputs and uses globally defined
 % hyper-parameters and a global variable q to indicate which data stream.
-    function [f,g] = product(v)
+    function [f,g] = product(x)
+        x_h = exp(x(1));
+        x_l = exp(x(2));
+        %x_s = exp(x(3));
         
-        cov = cov_matrix(t,t,test_h,test_l) +... 
-            (test_s+10^-9)*eye(newlength);
+        v = x(3:end);
+        
+        cov = cov_matrix(x2,x2,x_h,x_l) +... 
+            (s_final(q)+10^-9)*eye(newlength);
         
         icov = cov\eye(size(cov));
         
@@ -210,19 +247,68 @@ semilogy(n,n_test)
             
             g(gi) = exp(v(gi))-y(gi,q) + 0.5*gterm;
         end
+        
+        gh = (1/x_h)*(newlength - transpose(d)*(cov\d));
+        
+        % Next the l term
+        for ci = 1:newlength
+            for cj = 1:newlength
+                dcov(ci,cj) = (x2(ci)-x2(cj))^2*cov(ci,cj);
+            end
+        end
+
+        dcov = dcov/(x_l^3);
+
+        gl = -0.5*transpose(d)*icov*dcov*icov*d+0.5*trace(icov*dcov);
+        
+        %gs = 0.5*(-transpose(d)*(icov*icov)*d+trace(icov));
+        
+        g = [gh;gl;g];
             
     end
 
-% Function which calculates selected terms from the likelihood for a
-% globally defined set of poisson rate for inputted hyper-parameters
-    function f = hyper(x)
+    function p = posterior(v)
         
-        cov = cov_matrix(t,t,x(1),x(2)) + x(3)*eye(newlength);
+        cov = cov_matrix(x2,x2,h_final(q),l_final(q)) +... 
+            (s_final(q)+10^-9)*eye(newlength);
         
-        d = v_test-mean(q)*ones(newlength,1);
-
-        f = 0.5*log(det(cov))+0.5*transpose(d)*(cov\d);
-       
+        icov = cov\eye(size(cov));
+        
+        d = v-mean(q)*ones(newlength,1);
+        
+        y_fact = 1;
+        
+        for yi = 1:newlength
+            y_fact = y_fact/factorial(y(yi,q));
+        end
+        
+        log_product = -sum(exp(v))+transpose(v)*y(:,q)+log(y_fact)-...
+            (newlength/2)*log(2*pi)-0.5*log(det(cov))-0.5*transpose(d)*(cov\d);
+        
+        product = exp(log_product);
+        
+        v0 = v_final(:,q);
+        d0 = v0-mean(q)*ones(newlength,1);
+        
+        log_p0 = -sum(exp(v0))+transpose(v0)*y(:,q)+log(y_fact)-...
+            (newlength/2)*log(2*pi)-0.5*log(det(cov))-0.5*transpose(d0)*(cov\d0);
+        p0 = exp(log_p0);
+        
+        A = eye(newlength);
+        
+        for ai = 1:newlength
+            for aj = 1:newlength
+                if ai == aj
+                    A(ai,aj) = exp(v(ai)) + icov(ai,aj);
+                else
+                    A(ai,aj) = 0.5*(icov(ai,aj) + icov(aj,ai));
+                end
+            end
+        end
+        
+        factor = p0*sqrt(((2*pi)^newlength)/det(A));
+        
+        p = product / factor;
     end
 
 % Function which calculates the diagonal terms of the hessian matrix given
@@ -230,7 +316,7 @@ semilogy(n,n_test)
 % be the predicted variances for each timestep. 
     function va = hessian_diag(v)
         
-        cov_ = cov_matrix(t,t,h_final(q),l_final(q));
+        cov_ = cov_matrix(x2,x2,h_final(q),l_final(q));
         cov_ = cov_ + s_final(q)*eye(newlength);
         
         icov = cov_\eye(size(cov_));
@@ -247,10 +333,9 @@ semilogy(n,n_test)
             end
         end
         
-        hessian = inv(A);
+        covariance = inv(A);
         
-        va = diag(hessian);
+        va = diag(covariance);
     end
 
 end
-
