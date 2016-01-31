@@ -1,0 +1,321 @@
+\documentclass[a4paper,11pt]{report}
+
+%\usepackage[margin=1in]{geometry}
+
+% This sets the margins. They can be reduced to 20mm if i need the room later!
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ left=25mm,
+ top=30mm,
+ }
+
+\author{Constance Crozier\\Department of Engineering Science, University of Oxford}
+\title{Bayesian Non-Parametrics for the War in Afghanistan}
+\date{May 2016}
+
+% This sets the font to arial
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+% This changes the heading distances at the start of chapters
+\usepackage{titlesec}
+\titleformat{\chapter}[display]   
+{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}   
+\titlespacing*{\chapter}{0pt}{-60pt}{15pt}
+
+% This changes the form of the chapter title
+\usepackage[T1]{fontenc}
+\usepackage{titlesec, blindtext}
+\newcommand{\hsp}{\hspace{20pt}}
+\titleformat{\chapter}[hang]{\LARGE\bfseries}{\thechapter\hsp}{0pt}{\LARGE\bfseries}
+\titleformat{\section}[hang]{\large\bfseries}{\thesection\hsp}{0pt}{\large\bfseries}
+
+% This lets us use double spacing
+\usepackage{setspace}
+\doublespacing
+
+% This lets me use the normal operator, plus a whole bunch of other fun maths symbols 
+\usepackage{amssymb}
+\usepackage{amsmath}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\usepackage{cite}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+hi
+\end{abstract}
+
+\singlespacing
+\pagestyle{plain}
+\tableofcontents
+\doublespacing
+
+\pagebreak
+
+\chapter{Introduction}
+
+This is where you tell people why they should bother reading your article.
+
+\section{Literature Review}
+This is the section that is invariably much longer than it should be, and
+where everyone tries to impress peers about how easy it is to locate various
+references in online databases.
+
+\section{SIGACTS Data}
+This report examines the significant actions, or SIGACTS, log from the Afghanistan War released as part of wikileaks (ref). This records the type, time and place of every registered incident it should be noted that this will represent only a subset of the deaths which occurred throughout the period. Specifically this report focuses on two data streams - the direct and indirect fire rates. 
+
+These take include both friendly and enemy action, direct fire is when a line of sight is available to the shooter blah.
+
+\section{Non-Parametric Regression}
+
+Regression is the process of determining the relationship f between inputs x and noisy output y; which is assumed to contain both a deterministic component f(x) and a stochastic one.
+
+Given a set of observations D dihfshfs compute the posterior p(f | D) 
+
+
+...
+
+If the system dynamics are well known we could chose to fit with a parametric model and use the data to optimise the parameters. The problem with these models is their limited expressivity, we must be select an order for our polynomial up front and there is no guarantee that it will be able to fit the data appropriately.
+
+Non-Parametric models have an expressivity which grows with the number of observations. 
+
+
+Allow us to say something about the function eg.smooth-ness
+
+
+\chapter{Gaussian Processes}
+
+While a probability distribution describes the properties of variables, a stochastic process governs the properties of functions
+
+A Gaussian process (hereafter referred to as a GP) is a generalisation of the gaussian probability distribution; rather than describing variables, a GP governs function properties. This allows us to express some 
+
+A GP is completely defined by it's mean and covariance functions \(\mu (x)\) and \( k(x,x') \)
+
+One of the main attractions of the Gaussian process framework is
+tractability precisely that it unites a sophisticated and consistent view with computational
+tractability
+
+There are an infinite number of possible functions which pass through all of the training data points, the form of the resulting prediction is controlled by the choice of mean and covariance functions.
+
+\section{Mean and Covariance Function}
+
+Sensible choices for mean and covariance function are paramount in the success of your model.  
+
+\subsection{Mean Functions}
+
+The mean function represents the form a process is expected to take in the absence of any data. It dictates what our predictions will be far away from any observations.
+
+In the case of complete ignorance a zero mean function is often assumed; expressing equal probabilities to positive and negative values...
+
+This is not suitable for this data set as a negative number of incidents is not possible. Instead a constant mean function will be assumed, such as \ref{eq:GPmean}, where the \(\theta_1\) is a hyper-parameter left to be determined.
+
+\begin{equation} \label{eq:GPmean}
+\mu (x) = \theta_1
+\end{equation}
+
+\subsection{Covariance Functions}
+
+The covariance function dictates the strength of relationship between two points in the GP. The covariance function \(k\) is used to assemble the covariance matrix so that: 
+\\
+\\
+\centerline{
+\(
+\mathbf{K(a,b)} =  \left( \begin{array}{cccc}
+k(a_1,b_1) & k(a_1,b_2) &  \dots & k(a_1,b_m) \\
+k(a_2,b_1) & k(a_2,b_2) &  \dots & k(a_2,b_m) \\
+: & : & : & : \\
+k(a_n,b_1) & k(a_n,b_2) &  \dots & k(a_n,b_m)  \end{array} \right) \) }
+\\
+\\
+In order for \textbf{K} to be a valid covariance matrix it needs to be positive semi-definite, meaning it satisfies \( \mathbf{v^{T} K v} > 0\) for any \( \mathbf{v} \neq 0 \)
+
+In practice, the above is satisfied by selected from a library of pre-existing valid covariance functions. Perhaps the most common of these, and the one which this report will focus on, is the squared exponential function.
+
+\begin{equation}
+k(x_1,x_2) = h^2 exp(- \frac{(x_1-x_2)^2}{2 l^2})
+\end{equation} 
+
+This is a function of the euclidean distance between the input points and two hyper-parameters: \(h\), the output scale, which controls the amplitude of the covariance and \(l\), the length scale, which dictates the size of the range of input values deemed to be correlated. 
+
+
+\section{Regression}
+
+One of the main attractions of the Gaussian process framework is its computational tractability. Given a set of observations \( \mathbf{y}( \mathbf{x} ) = [y_1, y_2, ... y_n] \) which correspond to the known input values \( \mathbf{x} = [x_1, x_2, .. x_n] \) we can predict the distribution for novel input vector \( \mathbf{x_*} \) as \( y( \mathbf{x_*}) \sim \mathcal{N}(\mathbf{m_*,C_*}) \) \cite{GP-robots}. (Equations ref) can be used to find this mean and covariance, where \(\mu\) is the chosen mean function and \(\mathbf{K}\) is the assembled covariance matrix.
+
+\singlespacing
+
+\begin{equation}
+\mathbf{m_* = \mu (x_*) + K(x_* ,x) K(x,x)^{-1} (y(x) - \mu (x))}
+\end{equation}
+
+\begin{equation}
+\mathbf{ C_* = K(x_*,x_*)-K(x_*,x) K(x,x)^{-1} K(x_*,x)}^{T}
+\end{equation}
+
+\doublespacing
+
+This means a prediction can be produced for any \(\mathbf{y(x_*)}\) given only a set of observations \(\mathbf{y(x)}\). 
+
+SOMETHING ABOUT HOW IT WILL GO THROUGH ALL TRAINING POINTS WITH ZERO PREDICTED ERROR
+
+PICTURE?
+
+\subsection{Observational Noise}
+
+The SIGACTs data can be considered to be noise corrupted; inevitably some incidents will not have been recorded, and there may have been some human error in the data entry. 
+
+Consequently it is not appropriate to assume that the training data points are known with complete confidence. This uncertainty can be incorporated by adding an unknown noise to predictions, so that the equations become (reference) where \( \sigma^2 \) is the variance on the observed noise.
+
+\singlespacing
+
+
+\begin{equation}
+\mathbf{m_*} = \boldsymbol{\mu} \mathbf{(x_*) + K(x_* ,x) (K(x,x)}+\sigma^2 \mathbf{I)^{-1} (y(x)} - \boldsymbol{\mu} \mathbf{(x))}
+\end{equation}
+
+\begin{equation}
+\mathbf{ C_* = K(x_*,x_*)-K(x_*,x) (K(x,x)}+\sigma^2 \mathbf{I)^{-1} K(x_*,x)}^{T}
+\end{equation}
+
+\doublespacing
+
+The resulting predicted mean will no longer necessarily go through all of the training data, and there will be some predictive uncertainty at these points.
+
+\section{Learning Hyper-Parameters}
+Using the suggested mean and covariance functions leaves 4 hyper-parameters which need to be chosen in order to produce a prediction. These are: \(\theta_1\) the mean value, \(l\) the length scale, \(h^2\) the output scale and \(\sigma^2\) the noise variance. 
+
+The likelihood of a set of observations given a model is just equal to the multivariate Gaussian likelihood, given in \ref{eq:GPlikelihood}, where the \(p\)-length vector \(\mathbf{x}\) is the training data and the hyper-parameters are stored in a vector \(\mathbf{\theta}\).
+
+\begin{equation} \label{eq:GPlikelihood}
+L(\mathbf{x | \theta}) = \frac{1}{(2\pi)^{p/2} |\boldsymbol{\Sigma|}^{\frac{1}{2}}} exp(- \frac{1}{2} \mathbf{(x}-\boldsymbol{\mu})^{T}\boldsymbol{\Sigma}^{-1}(\mathbf{x}-\boldsymbol{\mu}))
+\end{equation}
+
+The maximum likelihood estimate for the hyper-parameters \(\mathbf{\theta}\) is the vector which maximises this quantity. Given the presence of the exponent it is easier computationally to consider maximising the log-likelihood, given in equation \ref{eq:GPloglikelihood}. This is valid because log is a strictly monotonically increasing function, meaning the locations of turning points are invariant under the transformation. \par
+As the first term of the log-likelihood is independent of all the hyper-parameters, the problem of finding the MLE for \(\boldsymbol{\theta}\) can be described by equation \ref{eq:GPfmin}.
+
+\singlespacing
+
+\begin{equation} \label{eq:GPloglikelihood}
+ln(L(\mathbf{x} | \boldsymbol{\theta})) = - \frac{p}{2} ln(2\pi) - \frac{1}{2} ln(|\boldsymbol{\Sigma}|) - \frac{1}{2} (\mathbf{x}-\boldsymbol{\mu})^{T} \boldsymbol{\Sigma}^{-1}(\mathbf{x}-\boldsymbol{\mu})
+\end{equation}
+
+\begin{equation} \label{eq:GPfmin}
+\hat{\boldsymbol{\theta}} = \argmin_\theta{\{ln(|\boldsymbol{\Sigma}|) +(\mathbf{x}-\boldsymbol{\mu})^{T}\boldsymbol{\Sigma}^{-1}(\mathbf{x}-\boldsymbol{\mu})}\}
+\end{equation}
+
+\doublespacing
+
+% Should i maybe include figures of likelihood vs individual parameters?
+
+As optimisation is only over 4 dimensions, and we can find the MLE hyper-parameters using a simple grid search.
+
+% PICTURE
+
+One of the main problems with this model is that it places probability mass on negative numbers and non-integer numbers. 
+
+%In reality the incidents in a day should be modelled as a point process. 
+
+A poisson point process would be a more natural model for this data as this would only put weight on positive integer numbers. These are defined by a single parameter \(\lambda\), if this is allowed to vary with time the process is labelled non-homogenous. 
+
+However these processes lack the expressivity of GPs.
+
+\chapter{Log Cox Gaussian Processes}
+
+A Cox process is essentially a non-homogenous Poisson point process where the underlying intensity \(\lambda\) is itself a stochastic process. In a Log Cox Gaussian process (LGCP) we assume that the log-intensity of the point process is a GP. 
+
+\begin{equation} \label{eq:LGCPsetup}
+\mathbf{v} = log(\boldsymbol{\lambda}) = \mathcal{G}\mathcal{P} \{ \mu(. ;\boldsymbol{\theta}) , \mathbf{K}(. , . ,\boldsymbol{\theta})\}
+\end{equation}
+
+This retains the expressivity of GPs while constraining the predicted intensities to be positive. However, the intensity values act as parameters meaning the optimisation problem becomes significantly harder. To reduce the complexity, one of the hyper-parameters can be eliminated by selecting the mean function in \ref{eq:LGCPmean}, with the caveat that we take \(log(0)=0\). This selects the average observed log-intensity as the constant mean. 
+
+\begin{equation} \label{eq:LGCPmean}
+\mu (x) = \frac{1}{N} \sum_{i=1}^{N} log_e(y_i)
+\end{equation}
+
+
+\section{idk}
+
+As well as the hyper-parameters of the mean and covariance function, the discrete values \(\mathbf{v}\) also need to be found. 
+
+we have parameters3239728
+
+Given some training data \(\mathbf{D} = \{y_1,y_2, ..., y_N\}\) composed of a discrete numbers of observed incidents, the most likely values of \(\mathbf{v}\) need to be found as they will form the mean values of the model. Bayes rule can be used to formulate the posterior for \(\mathbf{v}\), given in \ref{eq:LCGPposterior}, which optimal values of \(v_i\) will maximise. This expression requires a prior distribution of the hyper-parameters \(p(\boldsymbol{\theta})\) which can be approximated as a delta function at the \textit{true} parameters \(\hat{\boldsymbol{\theta}}\) reducing the expression to \ref{eq:LCGPposterior2}.
+
+\singlespacing
+
+\begin{equation} \label{eq:LCGPposterior}
+p(\mathbf{v | D}) = \frac{\int{p(\mathbf{D|v})p(\mathbf{v}|\boldsymbol{\theta})p(\boldsymbol{\theta}) d\boldsymbol{\theta}}}{\int{\int{p(\mathbf{D|v})p(\mathbf{v}|\boldsymbol{\theta})p(\boldsymbol{\theta}) d\boldsymbol{\theta} d\mathbf{v}}}}
+\end{equation}
+
+\begin{equation}
+p(\boldsymbol{\theta}) = \delta(\boldsymbol{\theta} - \hat{\boldsymbol{\theta}})
+\end{equation}
+
+\begin{equation} \label{eq:LCGPposterior2}
+p(\mathbf{v | D}) = \frac{p(\mathbf{D|v})p(\mathbf{v}|\hat{\boldsymbol{\theta}}) }{\int{p(\mathbf{D|v})p(\mathbf{v}|\hat{\boldsymbol{\theta}}) d\mathbf{v}}}
+\end{equation}
+
+\doublespacing
+
+For a point process model, the probability distribution for each observation \(y_i\) is Poisson with intensity \(e^{v_i}\). Assuming that observations are independent the likelihood \(p(\mathbf{D|v})\) is just the product of these poisson distributions, as expressed in \ref{eq:LGCPlikelihood}. As \(\mathbf{v}\) is a GP, the distribution given a set of hyper-parameters is just a multivariate Guassian likelihood. 
+
+\singlespacing
+
+\begin{equation} \label{eq:LGCPlikelihood}
+p(\mathbf{D|v}) = \prod_{i=1}^{m} \mathcal{P}_o (y_i, e^{v_i})
+\end{equation}
+
+\begin{equation}
+p(\mathbf{v}|\hat{\boldsymbol{\theta}}) = \frac{1}{\sqrt{(2\pi)^{m} |\hat{\boldsymbol{\Sigma|}}}} exp(- \frac{1}{2} \mathbf{(v}-\hat{\boldsymbol{\mu}})^{T}\hat{\boldsymbol{\Sigma}}^{-1}(\mathbf{v}-\hat{\boldsymbol{\mu}}))
+\end{equation}
+
+\doublespacing
+
+The denominator of \ref{eq:LCGPposterior} is intractable, so an approximation is needed in order to compute the posterior. This report focuses on Laplace's approximation, where the integrand \(P(\mathbf{x})\) is assumed to be gaussian and maximised at \(\mathbf{x=x_0}\). Equations \ref{eq:laplaceaprrox} and \ref{eq:laplaceaprrox2} give the form of the approximation. \cite{Mackay} When applied to the expression \(\int{\{p(\mathbf{D|v}) p(\mathbf{v}|\hat{\boldsymbol{\theta}})\} d\mathbf{v}} \) the result is only evaluated at the maximum \(\hat{\mathbf{v}}\) and therefore independent of the values \(v_i\). Therefore the maxima of the posterior and the product \(p(\mathbf{D|v}) p(\mathbf{v}|\hat{\boldsymbol{\theta}})\) are at the same location.
+
+\singlespacing
+
+\begin{equation} \label{eq:laplaceaprrox}
+\int{P(\mathbf{x}) dx} \approx P(\mathbf{x_0}) \sqrt{\frac{2\pi}{c}}
+\end{equation} 
+
+\begin{equation} \label{eq:laplaceaprrox2}
+c = - \frac{\partial^2}{\partial \mathbf{x}^2} ln P(\mathbf{x_0}) |_{\mathbf{x}=\mathbf{x_0}}
+\end{equation}
+
+\doublespacing 
+
+As the optimum hyper-parameters also need to be found, the variables can be concatenated into a single vector \( \boldsymbol{\gamma} = [\boldsymbol{\theta}, \mathbf{v}]^{T}\). Exploiting the monotonically increasing property of the \(log_e\) function, the optimisation problem can be written as:
+
+\begin{equation} \label{eq:GPfmin}
+\hat{\boldsymbol{\gamma}} = \argmin_\gamma{\{ \sum_{i=1}^{N}e^{v_i} - \mathbf{v}^{T}\mathbf{y} + \frac{1}{2}(\mathbf{v}-\boldsymbol{\mu})^{T}\boldsymbol{\Sigma}^{-1}(\mathbf{v}-\boldsymbol{\mu}) + \frac{1}{2}ln(|\boldsymbol{\Sigma}|)\}}
+\end{equation}
+
+This is a N+3 dimensional problem (where N is the number of training data points used) and our optimiser is only capable of finding local minima, of which there will be  
+
+\section{Something}
+
+\(  \Sigma' =  \left( \begin{array}{cc}
+\rho_1^2 \Sigma + \sigma^2 I & \alpha \rho_1 \rho_2 \Sigma  \\
+\alpha \rho_1 \rho_2 \Sigma & \rho_2^2 \Sigma + \sigma^2 I \end{array} \right) \)
+
+\section{Including Correlation}
+
+\section{Conclusion}
+Not much of a paper, but it's a start.
+
+\chapter{Testing}
+
+ddd
+
+\singlespacing 
+
+\bibliographystyle{plain}
+\bibliography{report}
+
+\end{document}
