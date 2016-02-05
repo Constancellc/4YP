@@ -6,13 +6,18 @@
 \usepackage{geometry}
  \geometry{
  a4paper,
- left=25mm,
+ left=20mm,
  top=30mm,
  }
 
 \author{Constance Crozier\\Department of Engineering Science, University of Oxford}
 \title{Bayesian Non-Parametrics for the War in Afghanistan}
 \date{May 2016}
+
+% In order to import matlab figures
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
 
 % This sets the font to arial
 \usepackage{helvet}
@@ -39,6 +44,8 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \DeclareMathOperator*{\argmin}{arg\,min}
+\usepackage{dsfont}
+\usepackage{mathtools}
 
 \usepackage{cite}
 
@@ -57,13 +64,10 @@ hi
 \pagebreak
 
 \chapter{Introduction}
-
-This is where you tell people why they should bother reading your article.
+Everyone knows you write the intro last....
 
 \section{Literature Review}
-This is the section that is invariably much longer than it should be, and
-where everyone tries to impress peers about how easy it is to locate various
-references in online databases.
+I can't be bothered to do this now.
 
 \section{SIGACTS Data}
 This report examines the significant actions, or SIGACTS, log from the Afghanistan War released as part of wikileaks (ref). This records the type, time and place of every registered incident it should be noted that this will represent only a subset of the deaths which occurred throughout the period. Specifically this report focuses on two data streams - the direct and indirect fire rates. 
@@ -103,7 +107,7 @@ There are an infinite number of possible functions which pass through all of the
 
 \section{Mean and Covariance Function}
 
-Sensible choices for mean and covariance function are paramount in the success of your model.  
+Sensible choices for mean and covariance function are paramount in a model's success.  
 
 \subsection{Mean Functions}
 
@@ -120,17 +124,15 @@ This is not suitable for this data set as a negative number of incidents is not 
 \subsection{Covariance Functions}
 
 The covariance function dictates the strength of relationship between two points in the GP. The covariance function \(k\) is used to assemble the covariance matrix so that: 
-\\
-\\
-\centerline{
-\(
+
+\begin{equation}
 \mathbf{K(a,b)} =  \left( \begin{array}{cccc}
 k(a_1,b_1) & k(a_1,b_2) &  \dots & k(a_1,b_m) \\
 k(a_2,b_1) & k(a_2,b_2) &  \dots & k(a_2,b_m) \\
 : & : & : & : \\
-k(a_n,b_1) & k(a_n,b_2) &  \dots & k(a_n,b_m)  \end{array} \right) \) }
-\\
-\\
+k(a_n,b_1) & k(a_n,b_2) &  \dots & k(a_n,b_m)  \end{array} \right) 
+\end{equation}
+
 In order for \textbf{K} to be a valid covariance matrix it needs to be positive semi-definite, meaning it satisfies \( \mathbf{v^{T} K v} > 0\) for any \( \mathbf{v} \neq 0 \)
 
 In practice, the above is satisfied by selected from a library of pre-existing valid covariance functions. Perhaps the most common of these, and the one which this report will focus on, is the squared exponential function.
@@ -185,6 +187,9 @@ Consequently it is not appropriate to assume that the training data points are k
 
 The resulting predicted mean will no longer necessarily go through all of the training data, and there will be some predictive uncertainty at these points.
 
+
+
+
 \section{Learning Hyper-Parameters}
 Using the suggested mean and covariance functions leaves 4 hyper-parameters which need to be chosen in order to produce a prediction. These are: \(\theta_1\) the mean value, \(l\) the length scale, \(h^2\) the output scale and \(\sigma^2\) the noise variance. 
 
@@ -209,21 +214,56 @@ ln(L(\mathbf{x} | \boldsymbol{\theta})) = - \frac{p}{2} ln(2\pi) - \frac{1}{2} l
 
 \doublespacing
 
-% Should i maybe include figures of likelihood vs individual parameters?
+As dependencies between the direct and indirect fire incidents has not been considered, there will be a set of hyper-parameters for each of the data streams. \par
 
-As optimisation is only over 4 dimensions, and we can find the MLE hyper-parameters using a simple grid search.
+Optimization algorithms can compute the local minima given a function and a starting point, but it is difficult to determine when a global minima has been found. Given that the problem is in \(\mathds{R}^4\), a reasonable result should be obtained by using a grid search. This is where the optimiser is run repeatedly on using a \textit{grid} of starting points which span a range of each hyper-parameter. The lowest scoring result of these optimisations is assumed to be the global minimum. \par
 
-% PICTURE
+\section{Results}
 
-One of the main problems with this model is that it places probability mass on negative numbers and non-integer numbers. 
+Once the hyper-parameters have been chosen, the mean vector and covariance matrix of the GP for a denser set of times can then be generated. The model resulting from a training data set of 100 sample points is shown in figure \ref{fig:GPresults}. The continuous line represents the function mean and the shaded area either side shows \(\pm\) 2 standard deviations, this means ideally 96\% of the data should be inside this area. The top images plot the training data points, while the bottom ones superimpose the entire data set (the testing data) over the predictions. The hyper-parameters selected for this model are listed in table \ref{GPhyperparameters}.
 
-%In reality the incidents in a day should be modelled as a point process. 
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth}
+	\centering
+	\includegraphics[width=8.5cm]{GPresultsd.png}
+  	\caption{Direct Fire}
+  	\label{fig:sub1}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  	\centering
+  	\includegraphics[width=8.5cm]{GPresultsi.png}
+  	\caption{Indirect Fire}
+ 	 \label{fig:sub2}
+\end{subfigure}
+\caption{Gaussian process models from 100 sampled data points}
+\label{fig:GPresults}
+\end{figure}
+
+\singlespacing
+\begin{table}[]
+\centering
+\caption{Maximum likelihood estimates for the GP hyper-parameters}
+\label{GPhyperparameters}
+\begin{tabular}{c|c|c|c|c|}
+\cline{2-5}
+\textbf{}                                    & \(\mu\) & \(h\) & \(l\) & \(\sigma^2\) \\ \hline
+\multicolumn{1}{|c|}{\textbf{Direct Fire}}   & 14.01           & 9.56          & 102.12          & 28.01              \\ \hline
+\multicolumn{1}{|c|}{\textbf{Indirect Fire}} & 6.64           & 3.47          & 87.42          & 10.66              \\ \hline
+\end{tabular}
+\end{table}
+\doublespacing
+
+While the majority of the data set is within the 2 standard deviation points, this is representative of the large levels of uncertainty predicted at all points in the model. More alarmingly, a significant amount of probability mass is placed on negative values - while the actual number of incidents in a day is constrained to be both positive and integer. \par 
+
+% Also something about the direct failing to capture some characteristics near the end of the period
 
 A poisson point process would be a more natural model for this data as this would only put weight on positive integer numbers. These are defined by a single parameter \(\lambda\), if this is allowed to vary with time the process is labelled non-homogenous. 
 
-However these processes lack the expressivity of GPs.
+%Some bridge to the next chapter
 
 \chapter{Log Cox Gaussian Processes}
+
 
 A Cox process is essentially a non-homogenous Poisson point process where the underlying intensity \(\lambda\) is itself a stochastic process. In a Log Cox Gaussian process (LGCP) we assume that the log-intensity of the point process is a GP. 
 
@@ -237,14 +277,13 @@ This retains the expressivity of GPs while constraining the predicted intensitie
 \mu (x) = \frac{1}{N} \sum_{i=1}^{N} log_e(y_i)
 \end{equation}
 
+The underlying characteristics of \(\mathbf{v}\) should be similar to the GP regression case, so the same form of covariance function can be used - although the optimum hyper-parameters are likely to be significantly different.
 
-\section{idk}
+\section{Regression}
 
-As well as the hyper-parameters of the mean and covariance function, the discrete values \(\mathbf{v}\) also need to be found. 
+The regression problem is more complicated; as well as the mean and covariance hyper-parameters, the discrete intensity values \(\mathbf{v}\) also need to be found. The training data \(\mathbf{D} = \{y_1,y_2, ..., y_N\}\) is composed of the number of observed incidents for a sample set of days. Unlike GPs, LGCPs are not capable of producing predictions for any input vector, but only for inputs corresponding to the observations. The resulting values of \(\mathbf{v}\) will then form the predicted mean of the model. \par
 
-we have parameters3239728
-
-Given some training data \(\mathbf{D} = \{y_1,y_2, ..., y_N\}\) composed of a discrete numbers of observed incidents, the most likely values of \(\mathbf{v}\) need to be found as they will form the mean values of the model. Bayes rule can be used to formulate the posterior for \(\mathbf{v}\), given in \ref{eq:LCGPposterior}, which optimal values of \(v_i\) will maximise. This expression requires a prior distribution of the hyper-parameters \(p(\boldsymbol{\theta})\) which can be approximated as a delta function at the \textit{true} parameters \(\hat{\boldsymbol{\theta}}\) reducing the expression to \ref{eq:LCGPposterior2}.
+Bayes rule can be used to formulate the posterior for \(\mathbf{v}\), given in \ref{eq:LCGPposterior}, which optimal values of \(v_i\) will maximise. This expression requires a prior distribution of the hyper-parameters \(p(\boldsymbol{\theta})\) which can be approximated as a delta function at the \textit{true} parameters \(\hat{\boldsymbol{\theta}}\) reducing the expression to \ref{eq:LCGPposterior2}.
 
 \singlespacing
 
@@ -290,28 +329,157 @@ c = - \frac{\partial^2}{\partial \mathbf{x}^2} ln P(\mathbf{x_0}) |_{\mathbf{x}=
 
 \doublespacing 
 
-As the optimum hyper-parameters also need to be found, the variables can be concatenated into a single vector \( \boldsymbol{\gamma} = [\boldsymbol{\theta}, \mathbf{v}]^{T}\). Exploiting the monotonically increasing property of the \(log_e\) function, the optimisation problem can be written as:
+We can concatenate the GP hyper-parameters and the log-intensity values into a single vector \( \boldsymbol{\gamma} = [\boldsymbol{\theta}, \mathbf{v}]^{T}\) which we can optimise over. Exploiting the monotonically increasing property of the \(log_e\) function, the problem can be written as:
 
 \begin{equation} \label{eq:GPfmin}
-\hat{\boldsymbol{\gamma}} = \argmin_\gamma{\{ \sum_{i=1}^{N}e^{v_i} - \mathbf{v}^{T}\mathbf{y} + \frac{1}{2}(\mathbf{v}-\boldsymbol{\mu})^{T}\boldsymbol{\Sigma}^{-1}(\mathbf{v}-\boldsymbol{\mu}) + \frac{1}{2}ln(|\boldsymbol{\Sigma}|)\}}
+\hat{\boldsymbol{\gamma}} = \argmin_\gamma{\{ \sum_{i=1}^{N}e^{v_i} - \mathbf{v}^{T}\mathbf{y} + \frac{1}{2}ln(|\boldsymbol{\Sigma}|) + \frac{1}{2}(\mathbf{v}-\boldsymbol{\mu})^{T}\boldsymbol{\Sigma}^{-1}(\mathbf{v}-\boldsymbol{\mu})\}}
 \end{equation}
 
-This is a N+3 dimensional problem (where N is the number of training data points used) and our optimiser is only capable of finding local minima, of which there will be  
+% variance 
 
-\section{Something}
+\subsection{Reducing Complexity}
 
-\(  \Sigma' =  \left( \begin{array}{cc}
-\rho_1^2 \Sigma + \sigma^2 I & \alpha \rho_1 \rho_2 \Sigma  \\
-\alpha \rho_1 \rho_2 \Sigma & \rho_2^2 \Sigma + \sigma^2 I \end{array} \right) \)
+The optimization is now taking place in \(\mathds{R}^{N+3}\), where N is the number of training points used. This large increase in space means that a grid search is no longer appropriate, the computation time would be infeasible. As our predictions occur at the same times as the observations, it is reasonable to assume that the optimal values \(v_i\) will be close to the log-observed values \(log_e(y_i)\). This means the complexity of the search can be reduced by always starting the optimiser at \ref{eq:LGCPstartpoint}, meaning only the 3 hyper-parameters in \(\boldsymbol{\theta_0}\) need to be varied over. \par
+
+\begin{equation} \label{eq:LGCPstartpoint}
+\boldsymbol{\gamma_0} = \left( \begin{array}{cc}
+\boldsymbol{\theta_0} \\
+log_e(\mathbf{y}) \end{array} \right) 
+\end{equation}
+
+The number of optimization calculations can be reduced by using a latin hypercube, which given a range for each of the parameters randomly selects start points which are dissimilar. This reduces the chance of multiple start points leading to the same local minimum. \par
+
+The tolerance used by an optimiser strongly influences the time-cost of the operation, this is the maximum change in function value between iterations at which the algorithm will stop. Many of the start points selected by the latin hypercube will be obviously sub-optimal, meaning it is wasteful to perform accurate optimization at these points. 
+
+This problem can be avoided by performing an initial round of optimization with a large function tolerance, which acts to identify the rough location of the global minimum. The output from this can be used as the start point for a single more precise optimization, where the local minimum found can reasonably be assumed to be global.
+
+%cholesky decomposition
+
+\subsection{Initial Results}
+
+The initial predictions produced with 60 sampled training points are shown in figure \ref{fig:LGCPresults}. The smaller training set was necessitated in order to reduce computation time, but otherwise the format is the same as for the GP results. \par
+
+All probability mass is assigned to positive numbers, and the predicted variances are much smaller - meaning the level of uncertainty has been reduced. A preliminary look at the testing plots suggests that the majority of the observed  data lies within the predicted \(\pm\) 2 standard deviation area. However, the training data shows a worrying number of points outside of this region - far more than the ideal 4\% which could suggests this model is not a good fit. 
+
+\par
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth}
+	\centering
+	\includegraphics[width=8.5cm]{LGCPresultsd.png}
+  	\caption{Direct Fire}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  	\centering
+  	\includegraphics[width=8.5cm]{LGCPresultsi.png}
+  	\caption{Indirect Fire}
+\end{subfigure}
+\caption{Log Gaussian Cox process models from 60 sampled data points}
+\label{fig:LGCPresults}
+\end{figure}
+
+The hyper-parameters learned are listed in Table \ref{LGCPhyperparameters}. Similar length scales have been chosen for the data streams, which is unsurprising as changes to direct fire rates are likely to be closely related to those in indirect fire rates. 
+
+%%%%%
+
+\singlespacing
+\begin{table}[]
+\centering
+\caption{Estimates for the LGCP hyper-parameters}
+\label{LGCPhyperparameters}
+\begin{tabular}{c|c|c|c|}
+\cline{2-4}
+\textbf{}                                    & \(h\) & \(l\) & \(\sigma^2\) \\ \hline
+\multicolumn{1}{|c|}{\textbf{Direct Fire}}   & 0.8068          & 63.78          & \(1.304\times 10^{-8}\)              \\ \hline
+\multicolumn{1}{|c|}{\textbf{Indirect Fire}} & 0.4098          & 61.12          & \(1.5672\times 10^{-7}\)              \\ \hline
+\end{tabular}
+\end{table}
+\doublespacing
 
 \section{Including Correlation}
 
-\section{Conclusion}
-Not much of a paper, but it's a start.
+Given the probable correlation between quantities it seems counterintuitive to construct two independent models for the data streams; not only will the hyper-parameters likely be similar, but if the events are correlated then the training data for one stream can provide valuable information for modelling the other.\par
+
+This section explores a single model, which takes as training data samples of both the direct and indirect fire rates and outputs predictions for both.
+
+\subsection{Model Adaptation}
+
+The LGCP can be easily adapted to fit a multi-input, multi-output model. The training data streams are concatenated into a single vector \ref{eq:LGCPCy}, and a step function of the form \ref{eq:LGCPCmean} can be assumed for the mean function. The first half of resulting predictions for \(\mathbf{v}\) will be for direct incidents, and the second for indirect.
+
+\begin{equation} \label{eq:LGCPCy}
+\mathbf{y} = \left( \begin{array}{cc}
+\mathbf{y^{direct}} \\
+\mathbf{y^{indirect}} \end{array} \right)
+\end{equation}
+
+\begin{equation} \label{eq:LGCPCmean}
+\mu (x) = \begin{cases}  
+\displaystyle \sum_{i=1}^{N} log_e(y_i^{direct}) & for \text{ }x\le N \\
+\displaystyle \sum_{i=1}^{N}log_e(y_i^{indirect}) & for \text{ }x>N \\ \end{cases}
+\end{equation}
+
+The covariance matrix requires more adaptation; we require a function which weights for both distance between points and type of incident. 
+%wahhh
+
+The covariance function \(k(\mathbf{x_1}, \mathbf{x_2})\) takes vector inputs \(\mathbf{x_i} = [t_i,\delta_i]^T\) which contain both the time \(t\) and the type \(\delta\) of the observation. For two points to be highly correlated they need to be both close in distance and the same type of incident so it is appropriate to model \(k\) as a product of two covariance functions, one for each input, such that \(k(\mathbf{x_1}, \mathbf{x_2}) = k_t(t_1,t_2) k_{\delta}(\delta_1,\delta_2)\). The type depending function takes the form of \ref{eq:LGCPCtypecovariance} where the correlation between the two data streams is a hyper-prameter constrained so that \(-1\le \alpha \le 1\).
+
+\begin{equation} \label{eq:LGCPCtypecovariance}
+k_{\delta}(\delta_1,\delta_2) = \begin{cases}
+1 & for \text{ } \delta_1 = \delta_2 \\
+\alpha & for \text{ } \delta_1 \neq \delta_2 \\ \end{cases}
+\end{equation}
+
+For the time-varying function the squared-exponential form is still appropriate. Both the direct and indirect fire rates must have the same length scale in order for the covariance matrix to be positive semi-definite, but they may have different output scales and noise variances. The complete covariance matrix is given in \ref{eq:LGCPCcovariance} where \(\rho_1\) , \(\rho_2\) are the respective output scales, and \(\sigma_d^2\) , \(\sigma_i^2\) the noise variances.
+
+\begin{equation} \label{eq:LGCPCcovariance}
+\begin{aligned}
+\boldsymbol{\Sigma} =&  \left( \begin{array}{cc}
+\rho_1^2 \mathbf{K} + \sigma_i^2 \mathbf{I} & \alpha \rho_1 \rho_2 \mathbf{K}  \\
+\alpha \rho_1 \rho_2 \mathbf{K} & \rho_2^2 \mathbf{K} + \sigma_d^2 \mathbf{I} \end{array} \right) \\ where\\
+&\mathbf{K}(i,j) = exp\left( \frac{(x_i-x_j)^2}{l^2}\right)
+\end{aligned}
+\end{equation}
+
+There are now 6 hyper-parameters to be found, which are summarised in Table \ref{LGCPChyperparameters}. 
+
+The optimisation problem is now in \(\mathds{R}^{2N+6}\).
+
+%% Bored
+
+\begin{table}[]
+\centering
+\caption{Hyperparameters of the multi-input LGCP model}
+\label{LGCPChyperparameters}
+\begin{tabular}{ll|c}
+\multicolumn{2}{c|}{\textbf{Hyperparameter}} & \textbf{Constraint} \\ \hline
+\(\rho_1\)           & Direct output scale             & \(\geq0\)            \\
+\(\rho_1\)             & Indirect output scale           & \(\geq0\)            \\
+\(l\)          & Length scale                    & \(\geq0\)            \\
+\(\alpha\)             & Correlation                     &  \(\in\{-1,1\}\)                   \\
+\(\sigma_d\)             & Direct noise variance           &    \(\geq0\)                 \\
+\(\sigma_i\)           & Indirect noise variance         &     \(\geq0\)               
+\end{tabular}
+\end{table}
+
+\subsection{Results}
+hi
+
+
 
 \chapter{Testing}
+It's useful to have a formal method of evaluating the success of models
 
-ddd
+\section{Mean Square Error}
+The mean square error is a crude but effective evaluation tool, which measures the distance between the training data observations and the predicted mean at that time step
+
+\begin{equation}
+
+\end{equation}
+
+\section{I don't know what to call this}
+
+\chapter{Conclusion}
+Not much of a report, but it's a start.
 
 \singlespacing 
 
