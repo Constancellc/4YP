@@ -1,4 +1,4 @@
-function [counts,variances,t] = lgcp_regression_cc
+function [counts,variances,t] = lgcp_regression_cc_cp
 
 % Importing the no. of deaths / day data
 direct_deaths = csvread('Data/Direct Frequencies.csv');
@@ -53,11 +53,11 @@ end
 % Find the log-average for each stream
 mean = [sum(logy(:,1)),sum(logy(:,2))]/newlength;
 
-%options = optimoptions('fminunc','Algorithm','trust-region','GradObj','on','DerivativeCheck','on');
+%options = optimoptions('fminunc','Algorithm','trust-region','GradObj','on','DerivativeCheck','on','TolX',100);
 
 % Turning on gradient search and reducing the tolerance for the first round
 % of 'rough' optiisations
-options = optimoptions('fminunc','Algorithm','trust-region','GradObj','on','TolX',100);
+options = optimoptions('fminunc','Algorithm','trust-region','GradObj','on','TolX',500);
 
 % This is to suppress the output of the optimizer. It's irritating.
 %options.Display = 'off';
@@ -90,13 +90,13 @@ c = [-1:2/steps:1];
 c = c(2:end);                               % Correlation
 
 % Setting up the latin hyper-cube, containing numbers from 0 to the #steps
-X = steps*lhsdesign(num,6);
+X = steps*lhsdesign(num,7);
 
 best = 10000;
 
 % Rounding all entries to integer numbers
 for i = 1:num
-    for j = 1:6
+    for j = 1:7
         X(i,j) = round(X(i,j));
         if X(i,j) == 0
             X(i,j) = 1;
@@ -105,13 +105,27 @@ for i = 1:num
     
     % Fill array 'samples' with values from the predefined vectors for each
     % parameter
+
     samples(1) = log(h(X(i,1)));
     samples(2) = log(h(X(i,2)));
-    samples(3) = l(X(i,3));
-    samples(4) = log(n(X(i,4)));
+    samples(3) = log(h(X(i,3)));
+    samples(4) = l(X(i,4));
     samples(5) = log(n(X(i,5)));
-    samples(6) = ilogit(c(X(i,6)));
-
+    samples(6) = log(n(X(i,6)));
+    samples(7) = ilogit(c(X(i,7)));
+    %{
+    samples(1) = log(1.5);
+    samples(2) = log(1.4);
+    samples(3) = log(1.3);
+    samples(4) = l(60);
+    samples(5) = log(0.001);
+    samples(6) = log(0.002);
+    samples(7) = ilogit(0.8);
+    %}
+    [x,fval] = fminunc(@product,[transpose(samples);logy(:,1);...
+            logy(:,2)],options);
+        
+        %{
    
     try [x,fval] = fminunc(@product,[transpose(samples);logy(:,1);...
             logy(:,2)],options);
@@ -136,6 +150,8 @@ for i = 1:num
             counter = counter + 1;
         end
     end
+            
+            %}
     
     fval
     
@@ -143,49 +159,10 @@ for i = 1:num
     if fval < best
         best = fval;                      % Replace best        
         x_ = x;
+        
     end
 
 end
-
-%%%%%%%
-
-x=x_;
-
-rho1_final = exp(x(1));              % Replace hyper-parameters
-rho2_final = exp(x(2));
-l_final = (x(3));
-s_final1 = exp(x(4));
-s_final2 = exp(x(5));
-a_final = logit(x(6));
-
-% The following section is needed when we want to plot the output of the
-% initial round of optimisation
-%{
-vi = x(7:end);
-vi_final = [vi(1:newlength),vi(newlength+1:end)];
-
-vari = hessian_diag(vi);
-
-% Calculating the variance terms
-variancei = [vari(1:newlength),vari(newlength+1:end)];
-
-% Working out vectors of the mean +/- 2 std 
-mean_plusi = zeros(2,newlength);
-mean_minusi = zeros(2,newlength);
-
-for k = 1:newlength
-    for h = 1:2
-        mean_plusi(h,k) = exp(vi_final(k,h) + 2*sqrt(variancei(k,h)));
-        mean_minusi(h,k) = exp(vi_final(k,h) - 2*sqrt(variancei(k,h)));
-    end
-end
-
-Y1i = [mean_minusi(1,:),fliplr(mean_plusi(1,:))];
-Y2i = [mean_minusi(2,:),fliplr(mean_plusi(2,:))];
-
-%}
-
-%%%%%%%
 
 best
 
@@ -195,12 +172,14 @@ optionsnew = optimoptions('fminunc','Algorithm','trust-region','GradObj','on','T
 
 rho1_final = exp(x(1));              % Replace hyper-parameters
 rho2_final = exp(x(2));
-l_final = (x(3));
-s_final1 = exp(x(4));
-s_final2 = exp(x(5));
-a_final = logit(x(6));
+xc_final = t(xc_chosen);
+cf_final = exp(x(3));
+l_final = x(4);
+s_final1 = exp(x(5));
+s_final2 = exp(x(6));
+a_final = logit(x(7));
 
-v_ = x(7:end);                    % Replace poisson rates
+v_ = x(8:end);                    % Replace poisson rates
 
 % Split into seperate data streams
 v_final = [v_(1:newlength),v_(newlength+1:end)];
@@ -215,9 +194,11 @@ variance = [var(1:newlength),var(newlength+1:end)];
 % For the testing script
 variances = variance;
 
+rho1_final 
+rho2_final              
+cf_final
+xc_final
 l_final
-rho1_final
-rho2_final
 s_final1
 s_final2
 a_final
@@ -252,23 +233,6 @@ indirect_deaths(1328) = 0;
 direct_deaths(1328) = 0;
 
 figure                                % Create a new figure
-
-% This is the first subplot if we want the output of the initial round
-%{
-subplot(2,1,1)
-shade = fill(X,Y1i,'b');               % Fills the confidence region   
-set(shade,'facealpha',.2)             % Sets the region transparent
-set(shade,'EdgeColor','None')
-hold on
-shade2 = fill(X,Y2i,'g');              
-set(shade2,'facealpha',.2)           
-set(shade2,'EdgeColor','None')
-plot(t,exp(vi_final))             % Plots the predicted mean values
-hold on
-plot(t,y,'x');                   % Plots the training data
-
-subplot(2,1,2)
-%}
 
 % This is if we want to plot the test and training data
 subplot(2,1,1)
@@ -309,7 +273,6 @@ ylabel('Incidents')
 %-------------------------------
 
 
-
 %-------------------------------------------------------
 % START OF LOCAL FUNCTION SECTION
 %-------------------------------------------------------
@@ -317,39 +280,81 @@ ylabel('Incidents')
 
 % Function which calculates selected terms of the posterior numerator.
     function [f,g] = product(x)
-        rho_1a = exp(x(1));
-        rho_1b = exp(x(2));
-        rho_2a = exp(x(3));
-        rho_2b = exp(x(4));
-        xc = x(5);                     % Index of changepoint
-        x_l = (x(6));                  % Length scale
-        x_s1 = exp(x(7));              % Direct noise variance
-        x_s2 = exp(x(8));              % Indirect noise variance
-        a = logit(x(9));               % Correlation factor
+        rho_1 = exp(x(1));
+        rho_2 = exp(x(2));
+        cf = exp(x(3));                % Change point factor
+        x_l = x(4);                  % Length scale
+        x_s1 = exp(x(5));              % Direct noise variance
+        x_s2 = exp(x(6));              % Indirect noise variance
+        a = logit(x(7));               % Correlation factor
         
-        v = x(10:end);                  % Predicted poisson rates
-        
-        % Finding covariance matrix
-        cov11 = cov_matrix3(t,t,x_l,rho_1a^2,rho_1b^2,xc);
-        cov12 = cov_matrix3(t,t,x_l,rho_1a*rho2_a,rho_1b*rho_2b,xc);
-        cov22 = cov_matrix3(t,t,x_l,rho_2a^2,rho_2b^2,xc);
-        
-        noise1 = x_s1*eye(newlength,newlength);
-        noise2 = x_s2*eye(newlength,newlength);
+        v = x(8:end);                  % Predicted poisson rates
 
-        cov = [cov11+noise1,a*cov12;a*cov12,cov22+noise2];
-        
-        % Cholesky decomposition to avoid inverting covariance
-        L = chol(cov,'lower');
-        R = transpose(L);
+        noise = [x_s1*eye(newlength,newlength),zeros(newlength,newlength);...
+            zeros(newlength,newlength),x_s2*eye(newlength,newlength)];
 
         % difference vector of the observed values
         d = v-[mean(1)*ones(newlength,1);mean(2)*ones(newlength,1)];
+
+        fbest = 10^8;
         
-        % The quantity we are trying to minimize - the negatie of the log
-        % likelihood containing only the terms which change with v
-        f = sum(exp(v))-transpose(v)*[y(:,1);y(:,2)]+0.5*log(det(cov))...
-            +0.5*transpose(d)*(cov\d);
+        step = newlength/10;
+        lim = round(step/2);
+        
+        %for xc = step-lim:step:newlength-lim
+        %for xc = newlength/2:newlength-1
+        for xc = 40:55
+            % Finding covariance matrix
+            cov = cov_matrix4(t,t,x_l,rho_1,rho_2,a,cf,xc) + noise;
+            
+            % Cholesky decomposition to avoid inverting covariance
+            L = chol(cov,'lower');
+            R = transpose(L);
+
+            % The quantity we are trying to minimize - the negatie of the log
+            % likelihood containing only the terms which change with v
+            ftrial = sum(exp(v))-transpose(v)*[y(:,1);y(:,2)]+0.5*log(det(cov))...
+                +0.5*transpose(d)*(cov\d);
+        
+            if ftrial <= fbest
+                fbest = ftrial;
+                xc_best = xc;
+                cov_best = cov;
+            end
+           
+        end
+        
+        %{
+        for xc = [xc_best-lim:xc_best+lim];
+            % Finding covariance matrix
+            cov = cov_matrix4(t,t,x_l,rho_1,rho_2,a,cf,xc) + noise;
+            
+            % Cholesky decomposition to avoid inverting covariance
+            L = chol(cov,'lower');
+            R = transpose(L);
+
+            % The quantity we are trying to minimize - the negatie of the log
+            % likelihood containing only the terms which change with v
+            ftrial = sum(exp(v))-transpose(v)*[y(:,1);y(:,2)]+0.5*log(det(cov))...
+                +0.5*transpose(d)*(cov\d);
+        
+            if ftrial <= fbest
+                fbest = ftrial;
+                xc_best = xc;
+                cov_best = cov;
+            end
+           
+        end
+        %}
+        
+        f = fbest;
+        xc = xc_best;
+        xc_chosen = xc_best;
+        cov = cov_best;
+
+        % Cholesky decomposition to avoid inverting covariance
+        L = chol(cov,'lower');
+        R = transpose(L);
 
         % Gradients for the poisson rate values
         g = R\(L\d)+exp(v)-[y(:,1);y(:,2)];
@@ -359,48 +364,43 @@ ylabel('Incidents')
         
         K = cov_matrix2(t,t,x_l);
         
+        Ku = [K(1:xc,1:xc),sqrt(cf)*K(1:xc,xc+1:end);...
+            sqrt(cf)*K(xc+1:end,1:xc),cf*K(xc+1:end,xc+1:end)];
+        
         % Ok, derivatives are going to be a bitch
         
         % Starting with the dervative of the covariance w.r.t rho_1a
         
-        covdr1a_11 = [2*rho_1a*K(1:xc,1:xc),rho_1b*K(1:xc,xc+1:end);...
-            rho_1b*K(xc+1:end,1:xc),zeros((newlength-xc),(newlength-xc))];
-        covdr1a_12 = a*[rho_2a*K(1:xc,1:xc),...
-            0.5*sqrt((rho_1b*rho_2a*rho_2b)/rho_1a)*K(1:xc,xc+1:end);...
-            0.5*sqrt((rho_1b*rho_2a*rho_2b)/rho_1a)*K(xc+1:end,1:xc),...
-            zeros((newlength-xc),(newlength-xc))];
+        covdr1 = [2*rho_1*Ku,a*rho_2*Ku;a*rho_2*Ku,...
+            zeros(newlength,newlength)];
         
-        covdr1a = [covdr1a_11,covdr1a_12;covdr1a_12;zeros(newlength,newlength)];
+        covdr2 = [zeros(newlength,newlength),a*rho_1*Ku;a*rho_1*Ku,...
+            2*rho_2*Ku];
         
-        % Now doing the same for rho_1b
-        
-        covdr1b_11 = [zeros(xc,xc),rho_1a*K(1:xc,xc+1:end);...
-            rho_1a*K(xc+1:end,1:xc),2*rho_1b*K(xc+1:end,xc+1:end)];
-        covdr1b_12 = a*[zeros(xc,xc),...
-            0.5*sqrt((rho_1a*rho_2a*rho_2b)/rho_1b)*K(1:xc,xc+1:end);...
-            0.5*sqrt((rho_1a*rho_2a*rho_2b)/rho_1b)*K(xc+1:end,1:xc),...
-            rho_2b*K(xc+1:end,xc+1:end)];
-        
-        covdr1b = [covdr1b_11,covdr1b_12;covdr1b_12;zeros(newlength,newlength)];
-        
-        % Now the gradients for the output scales rho1 and rho2
-        covdr1 = [2*rho_1*covk,a*rho_2*covk;a*rho_2*covk,zeros(newlength,newlength)];
-        covdr2 = [zeros(newlength,newlength),a*rho_1*covk;a*rho_1*covk,2*rho_2*covk];
-        
+        % Now compute the actual gradients for all of the output scales
         gr1 = 0.5*rho_1*(-transpose(d)*(R\(L\covdr1))*(R\(L\d))+trace(R\(L\covdr1)));
         gr2 = 0.5*rho_2*(-transpose(d)*(R\(L\covdr2))*(R\(L\d))+trace(R\(L\covdr2)));
-                
+               
+        dcov = zeros(newlength,newlength);
+        
         % Next the gradient for the length scale
         for ci = 1:newlength
             for cj = 1:newlength
-                dcov(ci,cj) = (t(ci)-t(cj))^2*covk(ci,cj);
+                dcov(ci,cj) = (t(ci)-t(cj))^2*K(ci,cj);
             end
         end
 
-        dcov = [(rho_1^2)*dcov,a*rho_1*rho_2*dcov;...
-            a*rho_1*rho_2*dcov,(rho_2^2)*dcov]/(x_l^3);
+        dcov = dcov/(x_l^3);
         
-        gl = 0.5*(-transpose(d)*(R\(L\dcov))*(R\(L\d))+trace(R\(L\dcov)));
+        % This adds the change point factor
+        dcov = [dcov(1:xc,1:xc),sqrt(cf)*dcov(1:xc,xc+1:end);...
+            sqrt(cf)*dcov(xc+1:end,1:xc),cf*dcov(xc+1:end,xc+1:end)];
+        
+        % And add the output scales
+        dcovl = [rho_1^2*dcov,a*rho_1*rho_2*dcov;a*rho_1*rho_2*dcov,...
+            rho_2^2*dcov];
+        
+        gl = 0.5*(-transpose(d)*(R\(L\dcovl))*(R\(L\d))+trace(R\(L\dcovl)));
         
         % Now the gradients for the noise values
         dcovs1 = [eye(newlength),zeros(newlength,newlength);zeros(newlength,2*newlength)];
@@ -410,12 +410,24 @@ ylabel('Incidents')
         gs2 = 0.5*x_s2*(-transpose(d)*(R\(L\dcovs2))*(R\(L\d))+trace(R\(L\dcovs2)));
         
         % Last the gradient for the correlation factor
-        covda = [zeros(newlength,newlength),rho_1*rho_2*covk;rho_2*rho_1*covk,zeros(newlength,newlength)];
+        
+        covda = [zeros(newlength,newlength),rho_1*rho_2*Ku;...
+            rho_1*rho_2*Ku,zeros(newlength,newlength)];
         
         ga = 0.5*dlogit(a)*(-transpose(d)*(R\(L\covda))*(R\(L\d))+trace(R\(L\covda)));
         
+        % Now for the change point factor
+        
+        dcovcf = [zeros(xc,xc),0.5*cf^(-0.5)*K(1:xc,xc+1:end);...
+            0.5*cf^(-0.5)*K(xc+1:end,1:xc),K(xc+1:end,xc+1:end)];
+        
+        dcovcf = [rho_1^2*dcovcf,a*rho_1*rho_2*dcovcf;...
+            a*rho_1*rho_2*dcovcf,rho_2^2*dcovcf];
+        
+        gcf = 0.5*cf*(-transpose(d)*(R\(L\dcovcf))*(R\(L\d))+trace(R\(L\dcovcf)));
+        
         % Compiling the gradients into one vector
-        g = [gr1;gr2;gl;gs1;gs2;ga;g];
+        g = [gr1;gr2;gcf;gl;gs1;gs2;ga;g];
     end
 
 % Function which calculates the diagonal terms of the hessian matrix given
@@ -423,13 +435,15 @@ ylabel('Incidents')
 % be the predicted variances for each timestep. 
     function va = hessian_diag(v)
         
-        covk = cov_matrix2(t,t,l_final);
-        noise1 = s_final1*eye(newlength,newlength);
-        noise2 = s_final2*eye(newlength,newlength);
-        
-        cov_ = [(rho1_final^2)*covk+noise1,a_final*rho1_final*rho2_final*covk;...
-            a_final*rho1_final*rho2_final*covk,(rho2_final^2)*covk+noise2];
-        
+        noise = [s_final1*eye(newlength,newlength),zeros(newlength,newlength);...
+            zeros(newlength,newlength),s_final2*eye(newlength,newlength)];
+
+        % difference vector of the observed values
+        d = v-[mean(1)*ones(newlength,1);mean(2)*ones(newlength,1)];
+
+        cov_ = cov_matrix4(t,t,l_final,rho1_final,rho2_final,a_final,...
+            cf_final,xc_chosen) + noise;
+
         % Cholesky decomposition to avoid inverting covariance
         L = chol(cov_,'lower');
         R = transpose(L);
