@@ -49,6 +49,11 @@
 
 \usepackage{cite}
 
+% This is for underlining in tables
+\usepackage{multirow}
+\usepackage[normalem]{ulem}
+\useunder{\uline}{\ul}{}
+
 \begin{document}
 \maketitle
 
@@ -66,13 +71,20 @@ hi
 \chapter{Introduction}
 Everyone knows you write the intro last....
 
-\section{Literature Review}
-I can't be bothered to do this now.
+
 
 \section{SIGACTS Data}
 This report examines the significant actions, or SIGACTS, log from the Afghanistan War released as part of wikileaks (ref). This records the type, time and place of every registered incident it should be noted that this will represent only a subset of the deaths which occurred throughout the period. Specifically this report focuses on two data streams - the direct and indirect fire rates. 
 
 These take include both friendly and enemy action, direct fire is when a line of sight is available to the shooter blah.
+
+\begin{figure}
+\centering
+\includegraphics{plotdata.png}
+%[width=17cm]
+\caption{Direct and Indirect incidents by day}
+\label{fig:sigactsdata}
+\end{figure}
 
 \section{Non-Parametric Regression}
 
@@ -90,30 +102,23 @@ Non-Parametric models have an expressivity which grows with the number of observ
 
 Allow us to say something about the function eg.smooth-ness
 
+\chapter{Literature Review}
+I can't be bothered to do this now.
 
 \chapter{Gaussian Processes}
 
-While a probability distribution describes the properties of variables, a stochastic process governs the properties of functions
+While a probability distribution describes the properties of variables, a stochastic process governs the properties of functions A Gaussian process (hereafter referred to as a GP) is a generalisation of the gaussian probability distribution; rather than describing variables, a GP governs function properties. \par
 
-A Gaussian process (hereafter referred to as a GP) is a generalisation of the gaussian probability distribution; rather than describing variables, a GP governs function properties. This allows us to express some 
-
-A GP is completely defined by it's mean and covariance functions \(\mu (x)\) and \( k(x,x') \)
-
-One of the main attractions of the Gaussian process framework is
-tractability precisely that it unites a sophisticated and consistent view with computational
-tractability
-
-There are an infinite number of possible functions which pass through all of the training data points, the form of the resulting prediction is controlled by the choice of mean and covariance functions.
+A GP is completely defined by it's mean and covariance functions \(\mu (x)\) and \( k(x,x')\). There are an infinite number of possible functions which pass through all of the training data points, the form of the resulting prediction is controlled by the choice of mean and covariance functions.
 
 \section{Mean and Covariance Function}
 
-Sensible choices for mean and covariance function are paramount in a model's success.  
+Sensible choices for mean and covariance function are paramount in a model's success. The chosen functions may contain unknown parameters, which can be marginalised later, however if the form of the equations do not suit the data a good fit is impossible. \\ \par
+%\subsection{Mean Functions}
 
-\subsection{Mean Functions}
+The mean function represents the form a process is expected to take in the absence of any data. It dictates the predictions in areas far away from any observations.
 
-The mean function represents the form a process is expected to take in the absence of any data. It dictates what our predictions will be far away from any observations.
-
-In the case of complete ignorance a zero mean function is often assumed; expressing equal probabilities to positive and negative values...
+In the case of complete ignorance a zero mean function is often assumed; expressing equal likelihoods of positive and negative relationships. 
 
 This is not suitable for this data set as a negative number of incidents is not possible. Instead a constant mean function will be assumed, such as \ref{eq:GPmean}, where the \(\theta_1\) is a hyper-parameter left to be determined.
 
@@ -121,7 +126,8 @@ This is not suitable for this data set as a negative number of incidents is not 
 \mu (x) = \theta_1
 \end{equation}
 
-\subsection{Covariance Functions}
+\par
+%\subsection{Covariance Functions}
 
 The covariance function dictates the strength of relationship between two points in the GP. The covariance function \(k\) is used to assemble the covariance matrix so that: 
 
@@ -141,54 +147,46 @@ In practice, the above is satisfied by selected from a library of pre-existing v
 k(x_1,x_2) = h^2 exp(- \frac{(x_1-x_2)^2}{2 l^2})
 \end{equation} 
 
-This is a function of the euclidean distance between the input points and two hyper-parameters: \(h\), the output scale, which controls the amplitude of the covariance and \(l\), the length scale, which dictates the size of the range of input values deemed to be correlated. 
-
+This is a function of the euclidean distance between the input points and two hyper-parameters: \(h\), the output scale, which controls the amplitude of the covariance and \(l\), the length scale, which dictates the range of input values deemed to be correlated. 
 
 \section{Regression}
 
-One of the main attractions of the Gaussian process framework is its computational tractability. Given a set of observations \( \mathbf{y}( \mathbf{x} ) = [y_1, y_2, ... y_n] \) which correspond to the known input values \( \mathbf{x} = [x_1, x_2, .. x_n] \) we can predict the distribution for novel input vector \( \mathbf{x_*} \) as \( y( \mathbf{x_*}) \sim \mathcal{N}(\mathbf{m_*,C_*}) \) \cite{GP-robots}. (Equations ref) can be used to find this mean and covariance, where \(\mu\) is the chosen mean function and \(\mathbf{K}\) is the assembled covariance matrix.
+One of the main attractions of the Gaussian process framework is its computational tractability. Given a set of observations \( \mathbf{y}( \mathbf{x} ) = [y_1, y_2, ... y_n] \) which correspond to the known input values \( \mathbf{x} = [x_1, x_2, .. x_n] \) we can predict the distribution for novel input vector \( \mathbf{x_*} \) as \( y( \mathbf{x_*}) \sim \mathcal{N}(\mathbf{m_*,C_*}) \) \cite{GP-robots}. Equations \ref{eq:GPmean} and \ref{eq:GPvar} can be used to find this mean and covariance, where \(\mu\) is the chosen mean function and \(\mathbf{K}\) is the assembled covariance matrix.
 
 \singlespacing
 
-\begin{equation}
+\begin{equation} \ref{eq:GPmean}
 \mathbf{m_* = \mu (x_*) + K(x_* ,x) K(x,x)^{-1} (y(x) - \mu (x))}
 \end{equation}
 
-\begin{equation}
+\begin{equation} \ref{eq:GPvar}
 \mathbf{ C_* = K(x_*,x_*)-K(x_*,x) K(x,x)^{-1} K(x_*,x)}^{T}
 \end{equation}
 
 \doublespacing
 
-This means a prediction can be produced for any \(\mathbf{y(x_*)}\) given only a set of observations \(\mathbf{y(x)}\). 
-
-SOMETHING ABOUT HOW IT WILL GO THROUGH ALL TRAINING POINTS WITH ZERO PREDICTED ERROR
-
-PICTURE?
+This means a prediction can be produced for any \(\mathbf{y(x_*)}\) given only a set of observations \(\mathbf{y(x)}\). The predicted mean will go through all of the training data points, and zero variance will be predicted at these points. This is only appropriate if there is zero uncertainty in the observed data, which is often not the case.
 
 \subsection{Observational Noise}
 
 The SIGACTs data can be considered to be noise corrupted; inevitably some incidents will not have been recorded, and there may have been some human error in the data entry. 
 
-Consequently it is not appropriate to assume that the training data points are known with complete confidence. This uncertainty can be incorporated by adding an unknown noise to predictions, so that the equations become (reference) where \( \sigma^2 \) is the variance on the observed noise.
+Consequently it is not appropriate to assume that the training data points are known with complete confidence. This uncertainty can be incorporated by adding an unknown noise to predictions, so that the equations become \ref{eq:GP+noisemean} and \ref{eq:GP+noisevar} where \( \sigma^2 \) is the variance on the observed noise.
 
 \singlespacing
 
 
-\begin{equation}
+\begin{equation} \label{eq:GP+noisemean}
 \mathbf{m_*} = \boldsymbol{\mu} \mathbf{(x_*) + K(x_* ,x) (K(x,x)}+\sigma^2 \mathbf{I)^{-1} (y(x)} - \boldsymbol{\mu} \mathbf{(x))}
 \end{equation}
 
-\begin{equation}
+\begin{equation} \label{eq:GP+noisevar}
 \mathbf{ C_* = K(x_*,x_*)-K(x_*,x) (K(x,x)}+\sigma^2 \mathbf{I)^{-1} K(x_*,x)}^{T}
 \end{equation}
 
 \doublespacing
 
 The resulting predicted mean will no longer necessarily go through all of the training data, and there will be some predictive uncertainty at these points.
-
-
-
 
 \section{Learning Hyper-Parameters}
 Using the suggested mean and covariance functions leaves 4 hyper-parameters which need to be chosen in order to produce a prediction. These are: \(\theta_1\) the mean value, \(l\) the length scale, \(h^2\) the output scale and \(\sigma^2\) the noise variance. 
@@ -335,7 +333,18 @@ We can concatenate the GP hyper-parameters and the log-intensity values into a s
 \hat{\boldsymbol{\gamma}} = \argmin_\gamma{\{ \sum_{i=1}^{N}e^{v_i} - \mathbf{v}^{T}\mathbf{y} + \frac{1}{2}ln(|\boldsymbol{\Sigma}|) + \frac{1}{2}(\mathbf{v}-\boldsymbol{\mu})^{T}\boldsymbol{\Sigma}^{-1}(\mathbf{v}-\boldsymbol{\mu})\}}
 \end{equation}
 
-% variance 
+The full posterior distribution \(p(\mathbf{v|D},\boldsymbol{\theta})\) can be approximated by the multivariate normal distribution in \ref{}. Where \(\boldsymbol{\mathcal{H}}\) is the hessian of the log distribution calculated at \(\hat{\mathbf{v}}\) 
+
+\singlespacing
+\begin{equation}
+p(\mathbf{v|D},\boldsymbol{\theta}) = \mathcal{N} (\mathbf{v}; \hat{\mathbf{v}}, \boldsymbol{\mathcal{H}}^{-1})
+\end{equation}
+
+\begin{equation}
+\boldsymbol{\mathcal{H}} = -\nabla^2 log p(\mathbf{v|D},\boldsymbol{\theta}) |_{\mathbf{v}=\hat{\mathbf{v}}}
+\end{equation}
+\doublespacing
+% variance
 
 \subsection{Reducing Complexity}
 
@@ -349,7 +358,7 @@ log_e(\mathbf{y}) \end{array} \right)
 
 The number of optimization calculations can be reduced by using a latin hypercube, which given a range for each of the parameters randomly selects start points which are dissimilar. This reduces the chance of multiple start points leading to the same local minimum. \par
 
-The tolerance used by an optimiser strongly influences the time-cost of the operation, this is the maximum change in function value between iterations at which the algorithm will stop. Many of the start points selected by the latin hypercube will be obviously sub-optimal, meaning it is wasteful to perform accurate optimization at these points. 
+The tolerance used by an optimiser strongly influences the time-cost of the operation, this is the maximum change in function value between iterations at which the algorithm will stop. Many of the start points selected by the latin hypercube will be obviously sub-optimal, meaning it is wasteful to perform accurate optimization at these points. \par
 
 This problem can be avoided by performing an initial round of optimization with a large function tolerance, which acts to identify the rough location of the global minimum. The output from this can be used as the start point for a single more precise optimization, where the local minimum found can reasonably be assumed to be global.
 
@@ -418,10 +427,9 @@ The LGCP can be easily adapted to fit a multi-input, multi-output model. The tra
 \displaystyle \sum_{i=1}^{N}log_e(y_i^{indirect}) & for \text{ }x>N \\ \end{cases}
 \end{equation}
 
-The covariance matrix requires more adaptation; we require a function which weights for both distance between points and type of incident. 
-%wahhh
+The covariance matrix requires more adaptation; weighting for both distance between points and type of incident is now needed. The covariance function \(k(\mathbf{x_1}, \mathbf{x_2})\) takes vector inputs \(\mathbf{x_i} = [t_i,\delta_i]^T\) which contain both the time \(t\) and the type \(\delta\) of the observation. \par
 
-The covariance function \(k(\mathbf{x_1}, \mathbf{x_2})\) takes vector inputs \(\mathbf{x_i} = [t_i,\delta_i]^T\) which contain both the time \(t\) and the type \(\delta\) of the observation. For two points to be highly correlated they need to be both close in distance and the same type of incident so it is appropriate to model \(k\) as a product of two covariance functions, one for each input, such that \(k(\mathbf{x_1}, \mathbf{x_2}) = k_t(t_1,t_2) k_{\delta}(\delta_1,\delta_2)\). The type depending function takes the form of \ref{eq:LGCPCtypecovariance} where the correlation between the two data streams is a hyper-prameter constrained so that \(-1\le \alpha \le 1\).
+For two points to be highly correlated they need to be both close in distance and the same type of incident so it is appropriate to model \(k\) as a product of two covariance functions, one for each input, such that \(k(\mathbf{x_1}, \mathbf{x_2}) = k_t(t_1,t_2) k_{\delta}(\delta_1,\delta_2)\). The type depending function takes the form of \ref{eq:LGCPCtypecovariance} where the correlation between the two data streams is a hyperparameter constrained so that \(-1\le \alpha \le 1\).
 
 \begin{equation} \label{eq:LGCPCtypecovariance}
 k_{\delta}(\delta_1,\delta_2) = \begin{cases}
@@ -440,11 +448,9 @@ For the time-varying function the squared-exponential form is still appropriate.
 \end{aligned}
 \end{equation}
 
-There are now 6 hyper-parameters to be found, which are summarised in Table \ref{LGCPChyperparameters}. 
+There are now 6 hyper-parameters to be found, which are summarised in Table \ref{LGCPChyperparameters}. The optimisation problem is now in \(\mathds{R}^{2N+6}\), meaning the size of the training data used needs to be kept relatively low to avoid excessive computation time. \par
 
-The optimisation problem is now in \(\mathds{R}^{2N+6}\).
-
-%% Bored
+If the training set is too small, there is a risk the model will not capture all features of the data. To ensure this isn't happening regression can be performed on multiple independent training sets, if consistent models are predicted then the data set was large enough.
 
 \begin{table}[]
 \centering
@@ -462,21 +468,90 @@ The optimisation problem is now in \(\mathds{R}^{2N+6}\).
 \end{table}
 
 \subsection{Results}
-hi
+The predictions produced for a training sample of 70 points are shown in Figure \ref{fig:LGCPCresults}. The blue line represents the predicted mean of the direct data and the green the indirect, similarly the shaded areas represent the respective \(\pm\) 2 std bounds. The top plot shows includes the training data points, while the bottom superimposes the predictions over the full data sets. \par
 
+\begin{figure}
+\centering
+\includegraphics[width=16cm]{LGCPCresults.png}
+\caption{caption me}
+\label{fig:LGCPCresults}
+\end{figure}
 
+\begin{table}[]
+\centering
+\caption{Optimum hyperparameters for multi-input LGCP model}
+\label{LGCPChyper}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{\(\rho_1\)} & \multicolumn{1}{c|}{\(\rho_2\)} & \(l\)                      & \(\sigma_d^2\)            & \(\sigma_i^2\)            & \(\alpha\) \\ \hline
+0.5890                            & 0.5857                           & \multicolumn{1}{c|}{55.28} & \(1.105 \times 10^{-4}\) & \(1.225 \times 10^{-4}\) & 0.5810     \\ \hline
+\end{tabular}
+\end{table}
+
+%%%%!!!
+Something about what the predictions look like. 
 
 \chapter{Testing}
-It's useful to have a formal method of evaluating the success of models
+It's useful to have a formal method of comparing the success of models
 
-\section{Mean Square Error}
-The mean square error is a crude but effective evaluation tool, which measures the distance between the training data observations and the predicted mean at that time step
+Given a testing data set composed of observations \(\mathbf{z_i}\) containing the number of direct and indirect fire rates on the \(i\)th day, the first task is to identify the model predictions at that time step.
 
-\begin{equation}
+It is important that the testing data set is independent of the training set in order to fairly analyse the model. As only a small percentage of the 
 
+For the GP model this is trivial as predictions can be produced for an arbitrary set of inputs, so all integer days in the range can be forecasted meaning the mean and variance corresponding to the test observation needs just to be selected. 
+
+Whereas, for the LGCP model predictions for the mean and variance are only generated at time steps corresponding to the training data. 
+
+
+\section{Evaluation Methods}
+The mean square error is a crude but effective evaluation tool, which measures the square distance between the training data observations and the predicted mean at that time step and sums over all testing data. The calculation is given in \ref{eq:mse}, where an N-length set of testing data has been used containing observations \(y_i\) corresponding to known inputs \(x_i\). This would produce an index of the success of the model for a single data stream, meaning scores for both the direct and indirect incident data would be obtained in each case. 
+
+\begin{equation} \label{eq:mse}
+mse = \frac{1}{N} \sum_{i=1}^{N} (y_i - f(x_i))^2
 \end{equation}
 
-\section{I don't know what to call this}
+While this measure gives some idea of the accuracy of the predicted mean, no account is taken of the model's predicted variance. Clearly it's preferable that the model perform badly in an area where it has declared a large uncertainty than in places where the predicted variance is low. \par
+
+%\section{I don't know what to call this}
+
+A better solution is to approximate the likelihood of the testing data. 
+
+For large testing data sets the likelihood may become to small to compute, as the observations are being considered independent we can instead find the average likelihood of a single data point.
+
+\section{Comparison}
+
+Given a testing data set of 500 points, the results of both evaluation methods for each model are listed in Table \ref{model-comparison}. \par
+
+The units of the mean square error test are incidents\(^2\), so lower numbers are preferable as they signify that the testing points are closer to the predicted mean. Contrastingly 
+
+\begin{table}[]
+\centering
+\caption{Formal evaluation of the 3 different models}
+\label{model-comparison}
+\begin{tabular}{ccccc}
+\multicolumn{1}{l}{}                                       & \multicolumn{4}{c}{{\ul \textbf{Test}}}                                                                                                                                           \\
+\multicolumn{1}{c|}{\multirow{2}{*}{{\ul \textbf{Model}}}} & \multicolumn{2}{c|}{\textbf{Mean Square Error}}                                         & \multicolumn{2}{c|}{\textbf{Average Likelihood}}                                                         \\
+\multicolumn{1}{c|}{}                                      & \multicolumn{1}{c|}{\textit{Direct Fire}} & \multicolumn{1}{c|}{\textit{Indirect Fire}} & \multicolumn{1}{c|}{\textit{Direct Fire}} & \multicolumn{1}{c|}{\textit{Indirect Fire}} \\ \hline
+\multicolumn{1}{|c|}{\textbf{GP Model}}                    & \multicolumn{1}{c|}{27.4574}              & \multicolumn{1}{c|}{10.2051}                & \multicolumn{1}{c|}{0.0537}               & \multicolumn{1}{c|}{0.0864}                 \\ \hline
+\multicolumn{1}{|c|}{\textbf{Basic LGCP Model}}            & \multicolumn{1}{c|}{32.9365}              & \multicolumn{1}{c|}{15.4097}                & \multicolumn{1}{c|}{0.0718}               & \multicolumn{1}{c|}{0.1017}                 \\ \hline
+\multicolumn{1}{|c|}{\textbf{LGCP + Correlation Model}}    & \multicolumn{1}{c|}{32.6205}              & \multicolumn{1}{c|}{11.6217}                & \multicolumn{1}{c|}{0.0834}               & \multicolumn{1}{c|}{0.1193}                 \\ \hline
+\end{tabular}
+\end{table}
+
+
+a(x_1,x_2) = \begin{cases}
+1 & for \text{ } x_1, x_2 \leq x_c \\
+c & for \text{ } x_1, x_2 \geq x_c \\ 
+\sqrt{c} & otherwise \\ 
+\end{cases}
+
+b(l_1,l_2) = \begin{cases}
+\rho_1^2 & for \text{ } l_1 = l_2 = direct \\
+\rho_2^2 & for \text{ } l_1 = l_2 = indirect \\ 
+\alpha \rho_1 \rho_2 & otherwise \\ 
+\end{cases}
+
+k(_1,x_2,l_1,l_2) = a(x_1,x_2) b(l_1,l_2) k_{se}(x_1,x_2)
 
 \chapter{Conclusion}
 Not much of a report, but it's a start.
