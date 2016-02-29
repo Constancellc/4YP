@@ -262,6 +262,7 @@ A poisson point process would be a more natural model for this data as this woul
 
 \chapter{Log Cox Gaussian Processes}
 
+% Poisson processes
 
 A Cox process is essentially a non-homogenous Poisson point process where the underlying intensity \(\lambda\) is itself a stochastic process. In a Log Cox Gaussian process (LGCP) we assume that the log-intensity of the point process is a GP. 
 
@@ -337,7 +338,7 @@ The full posterior distribution \(p(\mathbf{v|D},\boldsymbol{\theta})\) can be a
 
 \singlespacing
 \begin{equation}
-p(\mathbf{v|D},\boldsymbol{\theta}) = \mathcal{N} (\mathbf{v}; \hat{\mathbf{v}}, \boldsymbol{\mathcal{H}}^{-1})
+p(\mathbf{v|D},\boldsymbol{\theta}) \approx \mathcal{N} (\mathbf{v}; \hat{\mathbf{v}}, \boldsymbol{\mathcal{H}}^{-1})
 \end{equation}
 
 \begin{equation}
@@ -407,9 +408,11 @@ The hyper-parameters learned are listed in Table \ref{LGCPhyperparameters}. Simi
 
 \section{Including Correlation}
 
+% Change this bit to include Mike's paper that i found
+
 Given the probable correlation between quantities it seems counterintuitive to construct two independent models for the data streams; not only will the hyper-parameters likely be similar, but if the events are correlated then the training data for one stream can provide valuable information for modelling the other.\par
 
-This section explores a single model, which takes as training data samples of both the direct and indirect fire rates and outputs predictions for both.
+This section explores a single model, which takes as training data samples of both the direct and indirect fire rates and outputs predictions for both using the approach outlined in \cite{multi-outputGP}.
 
 \subsection{Model Adaptation}
 
@@ -427,17 +430,31 @@ The LGCP can be easily adapted to fit a multi-input, multi-output model. The tra
 \displaystyle \sum_{i=1}^{N}log_e(y_i^{indirect}) & for \text{ }x>N \\ \end{cases}
 \end{equation}
 
-The covariance matrix requires more adaptation; weighting for both distance between points and type of incident is now needed. The covariance function \(k(\mathbf{x_1}, \mathbf{x_2})\) takes vector inputs \(\mathbf{x_i} = [t_i,\delta_i]^T\) which contain both the time \(t\) and the type \(\delta\) of the observation. \par
+The covariance function now takes four inputs: the time inputs \(x_1, x_2\) and the labels \(l_1,l_2\) which denote which data series the input value belongs to. For two points to be highly correlated they need to be both close in distance and the same type of incident so it is appropriate to model \(k\) as a product \ref{eq:LGCPCcov},where \(k_{SE}\) is the squared exponential function with unity variance and \(K_L\) is a square matrix whose size is equal to the number of data streams - in this case two. 
 
-For two points to be highly correlated they need to be both close in distance and the same type of incident so it is appropriate to model \(k\) as a product of two covariance functions, one for each input, such that \(k(\mathbf{x_1}, \mathbf{x_2}) = k_t(t_1,t_2) k_{\delta}(\delta_1,\delta_2)\). The type depending function takes the form of \ref{eq:LGCPCtypecovariance} where the correlation between the two data streams is a hyperparameter constrained so that \(-1\le \alpha \le 1\).
-
-\begin{equation} \label{eq:LGCPCtypecovariance}
-k_{\delta}(\delta_1,\delta_2) = \begin{cases}
-1 & for \text{ } \delta_1 = \delta_2 \\
-\alpha & for \text{ } \delta_1 \neq \delta_2 \\ \end{cases}
+\begin{equation} \label{eq:LGCPCcov}
+k(x_1,x_2,l_1,l_2) = k_{SE}(x_1,x_2) \text{ } K_L(l_1,l_2) 
 \end{equation}
 
-For the time-varying function the squared-exponential form is still appropriate. Both the direct and indirect fire rates must have the same length scale in order for the covariance matrix to be positive semi-definite, but they may have different output scales and noise variances. The complete covariance matrix is given in \ref{eq:LGCPCcovariance} where \(\rho_1\) , \(\rho_2\) are the respective output scales, and \(\sigma_d^2\) , \(\sigma_i^2\) the noise variances.
+The squared exponential function \(k_{SE}\) is still appropriate for modelling the time component. Both the direct and indirect fire rates must have the same length scale in order for the covariance matrix to be positive semi-definite, but they may have different output scales and noise variances.
+
+Equation \ref{eq:KL-decomp} shows how the matrix \(K_L\) can be decomposed into a vector \(\boldsymbol{\lambda}\) which contains the respective output scales of the data streams and a matrix \(\mathbf{S}\) which models the correlation between data streams. The diagonal elements o f \(\mathbf{S}\) need to be 1 as a data stream is assumed to be perfectly correlated with itself, and it should be symmetric.  
+
+\singlespacing
+\begin{equation} \label{eq:KL-decomp}
+\begin{aligned}
+K_L =& \boldsymbol{\lambda}^T \mathbf{S} \boldsymbol{\lambda} \\ \\
+\boldsymbol{\lambda} = \left( \begin{array}{cc}
+\rho_1  \\
+\rho_2 \end{array} \right)\text{ } & \text{ }
+\mathbf{S} = \left( \begin{array}{cc}
+1 & \alpha  \\
+\alpha  & 1 \end{array} \right)
+\end{aligned}
+\end{equation}
+\doublespacing
+
+The complete covariance matrix is given in \ref{eq:LGCPCcovariance} where \(\rho_1\) , \(\rho_2\) are the respective output scales, and \(\sigma_d^2\) , \(\sigma_i^2\) the noise variances.
 
 \begin{equation} \label{eq:LGCPCcovariance}
 \begin{aligned}
@@ -491,7 +508,53 @@ The predictions produced for a training sample of 70 points are shown in Figure 
 %%%%!!!
 Something about what the predictions look like. 
 
+\chapter{Changepoints}
+
+%So far this report has focused on finding a single of hyper-parameters which can accurately describe the entire dataset. However, as the period spans four years it's likely that the system dynamics change at some point during the conflict.
+
+The raw data shows an escalation in direct fire incidents towards the end of the period. Rather than a random fluctuation this may indicate a change in the underlying system dynamics, meaning that trying to fit a single set of hyper-parameters to the data is inappropriate. 
+
+Changepoints can be incorporated into regression models at the expense of added hyperparameters, and hence complexity.
+
+\section{Sudden Change in Output Scale}
+
+The simplest case is a step change in only one of the hyper parameters. REFERENCE considers a sudden drastic change in output scale of a gaussian process, which may be applicable to the SIGACTs data. 
+
+This can be achieved by using the altered covariance function in \ref{eq:outputcpcov} where \(k_{se}\) is the squared exponential kernel with unity output scale and \(k_L\) is the correlation function from the previous model and \(a\) is defined in \ref{eq:outputcpcov2}. This function increases the output scales of both data series by a factor of \(c\) after some point \(x_c\).
+
+\singlespacing
+\begin{equation} \label{eq:outputcpcov}
+k(x_1,x_2,l_1,l_2) = a(x_1,x_2)\text{ } k_L(l_1,l_2) \text{ }k_{se}(x_1,x_2)
+\end{equation}
+
+\begin{equation} \label{eq:outputcpcov2}
+a(x_1,x_2) = \begin{cases}
+1 & for \text{ } x_1, x_2 \leq x_c \\
+c & for \text{ } x_1, x_2 \geq x_c \\ 
+\sqrt{c} & otherwise \\ 
+\end{cases}
+\end{equation}
+\doublespacing
+
+Two new hyperparameters have been introduced: the scale factor \(c\) and the changepoint location \(x_c\) which, as an index, must be integer. 
+
+In order to asses the suitability of this model it's useful to look at the variation of model evidence with changepoint location; if the sudden change in output scale model is suitable there should be a sharp peak at one location and every other position should be comparably unfavourable. 
+
+The results for the SIGACTSs data is shown in figure \ref{fig:oscpvariation}. This shows that a relatively similar probability is assigned to every changepoint location, suggesting that a sudden change in output scale model is not a good fit for the data. 
+
+\begin{figure}
+\centering
+\includegraphics[width=12cm]{oscpvariation.png}
+\caption{Variation of likelihood with Changepoint location}
+\label{fig:oscpvariation}
+\end{figure}
+
+\section{Sudden Change in Correlation}
+hi
 \chapter{Testing}
+
+% I need to add something about my in test model - i don't remember exactly what it was called which might be an issue .
+
 It's useful to have a formal method of comparing the success of models
 
 Given a testing data set composed of observations \(\mathbf{z_i}\) containing the number of direct and indirect fire rates on the \(i\)th day, the first task is to identify the model predictions at that time step.
@@ -513,7 +576,7 @@ mse = \frac{1}{N} \sum_{i=1}^{N} (y_i - f(x_i))^2
 While this measure gives some idea of the accuracy of the predicted mean, no account is taken of the model's predicted variance. Clearly it's preferable that the model perform badly in an area where it has declared a large uncertainty than in places where the predicted variance is low. \par
 
 %\section{I don't know what to call this}
-
+% Not average likelihood but average log likelihood
 A better solution is to approximate the likelihood of the testing data. 
 
 For large testing data sets the likelihood may become to small to compute, as the observations are being considered independent we can instead find the average likelihood of a single data point.
@@ -539,19 +602,7 @@ The units of the mean square error test are incidents\(^2\), so lower numbers ar
 \end{table}
 
 
-a(x_1,x_2) = \begin{cases}
-1 & for \text{ } x_1, x_2 \leq x_c \\
-c & for \text{ } x_1, x_2 \geq x_c \\ 
-\sqrt{c} & otherwise \\ 
-\end{cases}
 
-b(l_1,l_2) = \begin{cases}
-\rho_1^2 & for \text{ } l_1 = l_2 = direct \\
-\rho_2^2 & for \text{ } l_1 = l_2 = indirect \\ 
-\alpha \rho_1 \rho_2 & otherwise \\ 
-\end{cases}
-
-k(_1,x_2,l_1,l_2) = a(x_1,x_2) b(l_1,l_2) k_{se}(x_1,x_2)
 
 \chapter{Conclusion}
 Not much of a report, but it's a start.
