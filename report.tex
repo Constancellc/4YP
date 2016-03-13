@@ -86,6 +86,10 @@ These take include both friendly and enemy action, direct fire is when a line of
 \label{fig:sigactsdata}
 \end{figure}
 
+\section{Nonhomogenous Poisson Processes}
+
+
+
 \section{Non-Parametric Regression}
 
 Regression is the process of determining the relationship f between inputs x and noisy output y; which is assumed to contain both a deterministic component f(x) and a stochastic one.
@@ -97,7 +101,7 @@ Given a set of observations D dihfshfs compute the posterior p(f | D)
 
 If the system dynamics are well known we could chose to fit with a parametric model and use the data to optimise the parameters. The problem with these models is their limited expressivity, we must be select an order for our polynomial up front and there is no guarantee that it will be able to fit the data appropriately.
 
-Non-Parametric models have an expressivity which grows with the number of observations. 
+Non-Parametric models have an expressivity which grows with the number of observations, meaning it is always possible for the resulting function to go through all of the training data (although this may not be appropriate). 
 
 
 Allow us to say something about the function eg.smooth-ness
@@ -105,18 +109,30 @@ Allow us to say something about the function eg.smooth-ness
 \chapter{Literature Review}
 I can't be bothered to do this now.
 
+\section{Gaussian Processes}
+
+\section{LGCPs}
+
+\section{}
+
 \chapter{Gaussian Processes}
 
-While a probability distribution describes the properties of variables, a stochastic process governs the properties of functions A Gaussian process (hereafter referred to as a GP) is a generalisation of the gaussian probability distribution; rather than describing variables, a GP governs function properties. \par
+While a probability distribution describes the properties of variables, a stochastic process governs the properties of functions. \\
+% ^ I think this should go earlier in the report....
 
-A GP is completely defined by it's mean and covariance functions \(\mu (x)\) and \( k(x,x')\). There are an infinite number of possible functions which pass through all of the training data points, the form of the resulting prediction is controlled by the choice of mean and covariance functions.
+A Gaussian Process (hereafter referred to as a GP) is a distribution on the functions \(\mathbf{f}\) where any finite subset of function values are distributed multivariate gaussian. 
+%It can be thought of as a generalisation of the multivariate gaussian distribution to a potentially infinite number of variables.
+
+A GP is completely defined by it's mean and covariance functions \(\mu (x)\) and \( k(x,x')\). 
+
+There are an infinite number of possible functions which pass through all of the training data points, the form of the resulting prediction is controlled by the choice of mean and covariance functions \(\mu (x)\) and \( k(x,x')\), which completely define the GP.
 
 \section{Mean and Covariance Function}
 
-Sensible choices for mean and covariance function are paramount in a model's success. The chosen functions may contain unknown parameters, which can be marginalised later, however if the form of the equations do not suit the data a good fit is impossible. \\ \par
+Sensible choices for mean and covariance function are paramount in a model's success. The chosen functions may contain unknown parameters, to be marginalised later, however if the form of the equations is not suitable a good fit is impossible. \\ \par
 %\subsection{Mean Functions}
 
-The mean function represents the form a process is expected to take in the absence of any data. It dictates the predictions in areas far away from any observations.
+The mean function represents the form a process is expected to take in the absence of any data, meaning it dictates the predictions in areas far away from any observations.
 
 In the case of complete ignorance a zero mean function is often assumed; expressing equal likelihoods of positive and negative relationships. 
 
@@ -129,7 +145,7 @@ This is not suitable for this data set as a negative number of incidents is not 
 \par
 %\subsection{Covariance Functions}
 
-The covariance function dictates the strength of relationship between two points in the GP. The covariance function \(k\) is used to assemble the covariance matrix so that: 
+The covariance function dictates the strength of relationship between any two input points to the GP. The covariance function \(k\) is used to assemble the covariance matrix \(\mathbf{K}\) so that: 
 
 \begin{equation}
 \mathbf{K(a,b)} =  \left( \begin{array}{cccc}
@@ -139,9 +155,9 @@ k(a_2,b_1) & k(a_2,b_2) &  \dots & k(a_2,b_m) \\
 k(a_n,b_1) & k(a_n,b_2) &  \dots & k(a_n,b_m)  \end{array} \right) 
 \end{equation}
 
-In order for \textbf{K} to be a valid covariance matrix it needs to be positive semi-definite, meaning it satisfies \( \mathbf{v^{T} K v} > 0\) for any \( \mathbf{v} \neq 0 \)
+In order for \(\mathbf{K}\) to be a valid covariance matrix it needs to be positive semi-definite, meaning it satisfies \( \mathbf{v^{T} K v} > 0\) for any \( \mathbf{v} \neq 0 \)
 
-In practice, the above is satisfied by selected from a library of pre-existing valid covariance functions. Perhaps the most common of these, and the one which this report will focus on, is the squared exponential function.
+In practice, this requirement is satisfied by selected from a library of pre-existing valid covariance functions. Perhaps the most common of these, and the one which this report will focus on, is the squared exponential function.
 
 \begin{equation}
 k(x_1,x_2) = h^2 exp(- \frac{(x_1-x_2)^2}{2 l^2})
@@ -165,13 +181,13 @@ One of the main attractions of the Gaussian process framework is its computation
 
 \doublespacing
 
-This means a prediction can be produced for any \(\mathbf{y(x_*)}\) given only a set of observations \(\mathbf{y(x)}\). The predicted mean will go through all of the training data points, and zero variance will be predicted at these points. This is only appropriate if there is zero uncertainty in the observed data, which is often not the case.
+Therefore a prediction can be produced for any \(\mathbf{y(x_*)}\) given only a set of observations \(\mathbf{y(x)}\). The predicted mean will go through all of the training data points, and zero variance will be predicted at these points. This is only appropriate if there is zero uncertainty in the observed data, which is often not the case.
 
 \subsection{Observational Noise}
 
 The SIGACTs data can be considered to be noise corrupted; inevitably some incidents will not have been recorded, and there may have been some human error in the data entry. 
 
-Consequently it is not appropriate to assume that the training data points are known with complete confidence. This uncertainty can be incorporated by adding an unknown noise to predictions, so that the equations become \ref{eq:GP+noisemean} and \ref{eq:GP+noisevar} where \( \sigma^2 \) is the variance on the observed noise.
+Consequently it is not appropriate to assume that the training data points are known with complete confidence. This uncertainty can be incorporated by adding an unknown noise to predictions, so that the equations become \ref{eq:GP+noisemean} and \ref{eq:GP+noisevar} where \( \sigma^2 \) is the variance of the observed noise.
 
 \singlespacing
 
@@ -197,7 +213,7 @@ The likelihood of a set of observations given a model is just equal to the multi
 L(\mathbf{x | \theta}) = \frac{1}{(2\pi)^{p/2} |\boldsymbol{\Sigma|}^{\frac{1}{2}}} exp(- \frac{1}{2} \mathbf{(x}-\boldsymbol{\mu})^{T}\boldsymbol{\Sigma}^{-1}(\mathbf{x}-\boldsymbol{\mu}))
 \end{equation}
 
-The maximum likelihood estimate for the hyper-parameters \(\mathbf{\theta}\) is the vector which maximises this quantity. Given the presence of the exponent it is easier computationally to consider maximising the log-likelihood, given in equation \ref{eq:GPloglikelihood}. This is valid because log is a strictly monotonically increasing function, meaning the locations of turning points are invariant under the transformation. \par
+The maximum likelihood estimate for the hyper-parameters \(\mathbf{\theta}\) is the vector which maximises this quantity. Given the presence of the exponent it is easier computationally to consider maximising the log-likelihood, given in equation \ref{eq:GPloglikelihood}. This is valid because \(log\) is a strictly monotonically increasing function, meaning the locations of turning points are invariant under the transformation. \par
 As the first term of the log-likelihood is independent of all the hyper-parameters, the problem of finding the MLE for \(\boldsymbol{\theta}\) can be described by equation \ref{eq:GPfmin}.
 
 \singlespacing
@@ -213,7 +229,7 @@ ln(L(\mathbf{x} | \boldsymbol{\theta})) = - \frac{p}{2} ln(2\pi) - \frac{1}{2} l
 \doublespacing
 
 As dependencies between the direct and indirect fire incidents has not been considered, there will be a set of hyper-parameters for each of the data streams. \par
-
+% I hate everything not sure i should write about grid search
 Optimization algorithms can compute the local minima given a function and a starting point, but it is difficult to determine when a global minima has been found. Given that the problem is in \(\mathds{R}^4\), a reasonable result should be obtained by using a grid search. This is where the optimiser is run repeatedly on using a \textit{grid} of starting points which span a range of each hyper-parameter. The lowest scoring result of these optimisations is assumed to be the global minimum. \par
 
 \section{Results}
@@ -438,7 +454,7 @@ k(x_1,x_2,l_1,l_2) = k_{SE}(x_1,x_2) \text{ } K_L(l_1,l_2)
 
 The squared exponential function \(k_{SE}\) is still appropriate for modelling the time component. Both the direct and indirect fire rates must have the same length scale in order for the covariance matrix to be positive semi-definite, but they may have different output scales and noise variances.
 
-Equation \ref{eq:KL-decomp} shows how the matrix \(K_L\) can be decomposed into a vector \(\boldsymbol{\lambda}\) which contains the respective output scales of the data streams and a matrix \(\mathbf{S}\) which models the correlation between data streams. The diagonal elements o f \(\mathbf{S}\) need to be 1 as a data stream is assumed to be perfectly correlated with itself, and it should be symmetric.  
+Equation \ref{eq:KL-decomp} shows how the matrix \(K_L\) can be decomposed into a vector \(\boldsymbol{\lambda}\) which contains the respective output scales of the data streams and a matrix \(\mathbf{S}\) which models the correlation between data streams. The diagonal elements o f \(\mathbf{S}\) need to be 1 as a data stream is assumed to be perfectly correlated with itself, and all entries should be \(\in [0,1]\).
 
 \singlespacing
 \begin{equation} \label{eq:KL-decomp}
@@ -489,7 +505,7 @@ The predictions produced for a training sample of 70 points are shown in Figure 
 
 \begin{figure}
 \centering
-\includegraphics[width=16cm]{LGCPCresults.png}
+\includegraphics[width=13cm]{LGCPCresults.png}
 \caption{caption me}
 \label{fig:LGCPCresults}
 \end{figure}
@@ -501,7 +517,7 @@ The predictions produced for a training sample of 70 points are shown in Figure 
 \begin{tabular}{|c|c|c|c|c|c|}
 \hline
 \multicolumn{1}{|c|}{\(\rho_1\)} & \multicolumn{1}{c|}{\(\rho_2\)} & \(l\)                      & \(\sigma_d^2\)            & \(\sigma_i^2\)            & \(\alpha\) \\ \hline
-0.5890                            & 0.5857                           & \multicolumn{1}{c|}{55.28} & \(1.105 \times 10^{-4}\) & \(1.225 \times 10^{-4}\) & 0.5810     \\ \hline
+0.4170                            & 0.8825                           & \multicolumn{1}{c|}{41.643} & \(3.9100 \times 10^{-4}\) & \(3.3323 \times 10^{-4}\) & 0.5772     \\ \hline
 \end{tabular}
 \end{table}
 
@@ -510,21 +526,21 @@ Something about what the predictions look like.
 
 \chapter{Changepoints}
 
-%So far this report has focused on finding a single of hyper-parameters which can accurately describe the entire dataset. However, as the period spans four years it's likely that the system dynamics change at some point during the conflict.
+So far this report has focused on finding a single of hyper-parameters which can accurately describe the entire dataset. However, as the period spans four years it's likely that the system dynamics change at some point during the conflict.
 
-The raw data shows an escalation in direct fire incidents towards the end of the period. Rather than a random fluctuation this may indicate a change in the underlying system dynamics, meaning that trying to fit a single set of hyper-parameters to the data is inappropriate. 
+
 
 Changepoints can be incorporated into regression models at the expense of added hyperparameters, and hence complexity.
 
 \section{Sudden Change in Output Scale}
 
-The simplest case is a step change in only one of the hyper parameters. REFERENCE considers a sudden drastic change in output scale of a gaussian process, which may be applicable to the SIGACTs data. 
+The simplest case is a step change in only one of the hyper parameters, as considered in \cite{changepoint-prediction}. As the SIGACTs data shows a sharp increase in direct fire incidents towards the end of the period, a sudden drastic change in output scale may be an appropriate model.
 
-This can be achieved by using the altered covariance function in \ref{eq:outputcpcov} where \(k_{se}\) is the squared exponential kernel with unity output scale and \(k_L\) is the correlation function from the previous model and \(a\) is defined in \ref{eq:outputcpcov2}. This function increases the output scales of both data series by a factor of \(c\) after some point \(x_c\).
+This can be achieved by using the altered covariance function in \ref{eq:outputcpcov} where \(k_{se}\) is the squared exponential kernel with unity output scale and \(K_L\) is the correlation matrix from the previous model and \(a\) is defined in \ref{eq:outputcpcov2}. This function increases the output scales of both data series by a factor of \(c\) after some point \(x_c\), as it is a purely injective function the resulting covariance remains positive definite. 
 
 \singlespacing
 \begin{equation} \label{eq:outputcpcov}
-k(x_1,x_2,l_1,l_2) = a(x_1,x_2)\text{ } k_L(l_1,l_2) \text{ }k_{se}(x_1,x_2)
+k(x_1,x_2,l_1,l_2) = a(x_1,x_2)\text{ } K_L(l_1,l_2) \text{ }k_{se}(x_1,x_2)
 \end{equation}
 
 \begin{equation} \label{eq:outputcpcov2}
@@ -550,7 +566,71 @@ The results for the SIGACTSs data is shown in figure \ref{fig:oscpvariation}. Th
 \end{figure}
 
 \section{Sudden Change in Correlation}
-hi
+
+For a change in correlation a different approach is needed in order to ensure a positive definite covariance.  
+
+Instead of modelling the two data streams directly it makes sense to model the indirect fire intensities and then the difference between the two. This is equivalent to expressing the log intensities \(v_d\) and \(v_i\) as a linear combination of two independent functions \(f\) and \(g\) which are defined in \ref{eq:ccpfandg}.
+
+\begin{equation} 
+\left[ \begin{array}{cc}
+v_{d}(x)  \\
+v_{i}(x) \end{array} \right] = \left[ \begin{array}{cc}
+1 & 1  \\
+1  & 0 \end{array} \right] \left[ \begin{array}{cc}
+f(x)  \\
+g(x) \end{array} \right]
+\end{equation}
+
+\begin{equation} \label{eq:ccpfandg}
+\left[ \begin{array}{cc}
+f(x)  \\
+g(x) \end{array} \right] \sim \mathcal{G}\mathcal{P} \left( \left[ \begin{array}{cc}
+\mu_i  \\
+\mu_d - \mu_i \end{array} \right], \left[ \begin{array}{cc}
+K_f & 0  \\
+0  & K_g \end{array} \right] \right)
+\end{equation}
+
+The covariance of the indirect log-intensities \(K_f\) can take the same form used earlier in this report, where LGCPs were used to model the data streams independently, so that the covariance function is given by \ref{eq:kf}
+
+\begin{equation} \label{eq:kf}
+k_f(x_1,x_2) = \rho_1 \text{ }exp\{\frac{-(x_1-x_2)^2}{2 l_1^2}\}
+\end{equation}
+
+\begin{equation}
+k_g(x_1,x_2) = \rho_2 exp\{\frac{(x_1-x_2)^2}{2 l_2^2}\} \text{ } a(x_1,x_2)
+\end{equation}
+
+
+Modelling the difference function \(g\) directly allows much more complex analysis of the change in relationship between the two data streams. 
+
+As the training data consists of observations of direct and indirect incidents, the mean vector and covariance matrix need to be transformed into this form. For a transformation of the form \(\mathbf{y}= \mathbf{M} \mathbf{x}\) these arrays are given by \(\boldsymbol{\mu_y}= \mathbf{M}\text{ }\boldsymbol{\mu_x}\) and \(\mathbf{cov_y}= \text{ }\mathbf{M}\text{ } \mathbf{cov_x} \text{ } \mathbf{M}^{T}\) (REF?)
+
+This means the log-intensities of the data streams can be modelled by the Gaussian process defined in \ref{eq:fandggp}
+
+\begin{equation} \label{eq:fandggp}
+\left[ \begin{array}{cc}
+v_d(x)  \\
+v_i(x) \end{array} \right] \sim \mathcal{G}\mathcal{P} \left( \left[ \begin{array}{cc}
+\mu_d  \\
+\mu_i \end{array} \right], \left[ \begin{array}{cc}
+K_f + K_g & K_f  \\
+K_f  & K_f \end{array} \right] \right)
+\end{equation}
+
+
+
+An increase in correlation could be modelled by an increase in the output scale of \(g\)'s covariance
+
+
+
+
+\begin{figure}
+\centering
+\includegraphics[width=12cm]{ccpvariation.png}
+\caption{Variation of likelihood with Changepoint location}
+\label{fig:ccpvariation}
+\end{figure}
 \chapter{Testing}
 
 % I need to add something about my in test model - i don't remember exactly what it was called which might be an issue .
@@ -565,6 +645,8 @@ For the GP model this is trivial as predictions can be produced for an arbitrary
 
 Whereas, for the LGCP model predictions for the mean and variance are only generated at time steps corresponding to the training data. 
 
+\section{Test Model}
+grrr
 
 \section{Evaluation Methods}
 The mean square error is a crude but effective evaluation tool, which measures the square distance between the training data observations and the predicted mean at that time step and sums over all testing data. The calculation is given in \ref{eq:mse}, where an N-length set of testing data has been used containing observations \(y_i\) corresponding to known inputs \(x_i\). This would produce an index of the success of the model for a single data stream, meaning scores for both the direct and indirect incident data would be obtained in each case. 
@@ -595,9 +677,9 @@ The units of the mean square error test are incidents\(^2\), so lower numbers ar
 \multicolumn{1}{l}{}                                       & \multicolumn{4}{c}{{\ul \textbf{Test}}}                                                                                                                                           \\
 \multicolumn{1}{c|}{\multirow{2}{*}{{\ul \textbf{Model}}}} & \multicolumn{2}{c|}{\textbf{Mean Square Error}}                                         & \multicolumn{2}{c|}{\textbf{Average Likelihood}}                                                         \\
 \multicolumn{1}{c|}{}                                      & \multicolumn{1}{c|}{\textit{Direct Fire}} & \multicolumn{1}{c|}{\textit{Indirect Fire}} & \multicolumn{1}{c|}{\textit{Direct Fire}} & \multicolumn{1}{c|}{\textit{Indirect Fire}} \\ \hline
-\multicolumn{1}{|c|}{\textbf{GP Model}}                    & \multicolumn{1}{c|}{27.4574}              & \multicolumn{1}{c|}{10.2051}                & \multicolumn{1}{c|}{0.0537}               & \multicolumn{1}{c|}{0.0864}                 \\ \hline
-\multicolumn{1}{|c|}{\textbf{Basic LGCP Model}}            & \multicolumn{1}{c|}{32.9365}              & \multicolumn{1}{c|}{15.4097}                & \multicolumn{1}{c|}{0.0718}               & \multicolumn{1}{c|}{0.1017}                 \\ \hline
-\multicolumn{1}{|c|}{\textbf{LGCP + Correlation Model}}    & \multicolumn{1}{c|}{32.6205}              & \multicolumn{1}{c|}{11.6217}                & \multicolumn{1}{c|}{0.0834}               & \multicolumn{1}{c|}{0.1193}                 \\ \hline
+\multicolumn{1}{|c|}{\textbf{GP Model}}                    & \multicolumn{1}{c|}{29.1917}              & \multicolumn{1}{c|}{11.5186}                & \multicolumn{1}{c|}{0.0424}               & \multicolumn{1}{c|}{0.0691}                 \\ \hline
+\multicolumn{1}{|c|}{\textbf{Basic LGCP Model}}            & \multicolumn{1}{c|}{32.9365}              & \multicolumn{1}{c|}{15.4097}                & \multicolumn{1}{c|}{0.0476}               & \multicolumn{1}{c|}{0.0134}                 \\ \hline
+\multicolumn{1}{|c|}{\textbf{LGCP + Correlation Model}}    & \multicolumn{1}{c|}{25.5107}              & \multicolumn{1}{c|}{15.1999}                & \multicolumn{1}{c|}{0.0423}               & \multicolumn{1}{c|}{0.1093}                 \\ \hline
 \end{tabular}
 \end{table}
 
