@@ -11,7 +11,7 @@
  }
 
 \author{Constance Crozier\\Department of Engineering Science, University of Oxford}
-\title{Bayesian Non-Parametrics for the War in Afghanistan}
+\title{Bayesian Non-Parametrics for Data from the War in Afghanistan}
 \date{May 2016}
 
 % In order to import matlab figures
@@ -481,9 +481,42 @@ The complete covariance matrix is given in \ref{eq:LGCPCcovariance} where \(\rho
 \end{aligned}
 \end{equation}
 
-There are now 6 hyper-parameters to be found, which are summarised in Table \ref{LGCPChyperparameters}. The optimisation problem is now in \(\mathds{R}^{2N+6}\), meaning the size of the training data used needs to be kept relatively low to avoid excessive computation time. \par
+There are now 6 hyper-parameters to be found, which are summarised in Table \ref{LGCPChyperparameters}. For the novel correlation coefficient it may not be necessary to try multiple dissimilar start points, as empirical methods can provide a reasonable estimate of the most likely value.
 
-If the training set is too small, there is a risk the model will not capture all features of the data. To ensure this isn't happening regression can be performed on multiple independent training sets, if consistent models are predicted then the data set was large enough.
+Multivariate normal distributions allow simple analysis of the correlation between two randomly distributed variables. If the joint distribution of the direct and indirect fire incidents can be expressed as a 2-D gaussian, as in \ref{eq:2dmvg}, then the correlation coefficient can be approximated as \ref{eq:2dcorrelation}.
+
+Maximum likelihood can be used to find the best fitting 2D covariance matrix across the entire data set, the result of which is shown in \ref{fig:correlation}
+
+\begin{equation} \label{eq:2dmvg}
+\mathcal{N} \left( \left[ \begin{array}{cc}
+\mu_x \\
+\mu_y \end{array} \right], \left[ \begin{array}{cc}
+\sigma_{x}^2 & \sigma_{xy} \\
+\sigma_{xy} & \sigma_{y}^2  \end{array} \right] \right)
+\end{equation}
+
+\begin{equation} \label{eq:2dcorrelation}
+\alpha = \frac{\sigma_{xy}}{\sqrt{\sigma_{x}^2 \sigma_{y}^2}}
+\end{equation}
+
+\begin{figure}
+\centering
+\includegraphics[width=12cm]{direct_indirect_correlation.png}
+\caption{caption me}
+\label{fig:correlation}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=12cm]{direct_indirect_correlation2.png}
+\caption{caption me}
+\label{fig:lcorrelation}
+\end{figure}
+
+
+The optimisation problem is now in \(\mathds{R}^{2N+6}\), meaning the size of the training data used needs to be kept relatively low to avoid excessive computation time. If the training set is too small, there is a risk the model will not capture all features of the data. To ensure this isn't happening regression can be performed on multiple independent training sets, if consistent models are predicted then the data set was large enough.
+
+% ^ SHOULD I DO SOMETHING ACTUALLY ABOUT IT?
 
 \begin{table}[]
 \centering
@@ -591,22 +624,22 @@ K_f & 0  \\
 0  & K_g \end{array} \right] \right)
 \end{equation}
 
-The covariance of the indirect log-intensities \(K_f\) can take the same form used earlier in this report, where LGCPs were used to model the data streams independently, so that the covariance function is given by \ref{eq:kf}
+The covariance of the indirect log-intensities \(K_f\) can take the same form used earlier in this report, where LGCPs were used to model the data streams independently, so that the covariance function is given by \ref{eq:kf} containing two hyper-parameters: the length and output scales. 
 
 \begin{equation} \label{eq:kf}
 k_f(x_1,x_2) = \rho_1 \text{ }exp\{\frac{-(x_1-x_2)^2}{2 l_1^2}\}
 \end{equation}
 
-\begin{equation}
-k_g(x_1,x_2) = \rho_2 exp\{\frac{(x_1-x_2)^2}{2 l_2^2}\} \text{ } a(x_1,x_2)
+Modelling the difference function \(g\) directly allows much more complex analysis of the change in relationship between the two data streams, which appears to change throughout the period. Therefore it is the covariance \(K_g\) which should capture the changepoint. As there is an apparent increase in the variation between the data stream the change could be modelled by an increase in the output scale. The data is still a time-series so a squared exponential covariance is still appropriate therefore \ref{eq:kg} is used, where \(a\) has the same form as in \ref{eq:outputcpcov2}.
+
+\begin{equation} \label{eq:kg}
+k_g(x_1,x_2) = \rho_2 \text{ }exp\{\frac{(x_1-x_2)^2}{2 l_2^2}\} \text{ } a(x_1,x_2)
 \end{equation}
 
 
-Modelling the difference function \(g\) directly allows much more complex analysis of the change in relationship between the two data streams. 
+As the training data consists of observations of direct and indirect incidents, the mean vector and covariance matrix need to be transformed into this form. For a transformation of the form \(\mathbf{y}= \mathbf{M} \mathbf{x}\) these arrays are given by \(\boldsymbol{\mu_y}= \mathbf{M}\text{ }\boldsymbol{\mu_x}\) and \(\mathbf{cov_y}= \text{ }\mathbf{M}\text{ } \mathbf{cov_x} \text{ } \mathbf{M}^{T}\) (REF?) \par
 
-As the training data consists of observations of direct and indirect incidents, the mean vector and covariance matrix need to be transformed into this form. For a transformation of the form \(\mathbf{y}= \mathbf{M} \mathbf{x}\) these arrays are given by \(\boldsymbol{\mu_y}= \mathbf{M}\text{ }\boldsymbol{\mu_x}\) and \(\mathbf{cov_y}= \text{ }\mathbf{M}\text{ } \mathbf{cov_x} \text{ } \mathbf{M}^{T}\) (REF?)
-
-This means the log-intensities of the data streams can be modelled by the Gaussian process defined in \ref{eq:fandggp}
+The observations can also be assumed to be noise corrupted. In previous models maximum likelihood estimation has selected very similar values for the noise variance of the individual data streams. Therefore, in the interests of reducing the number of hyper-parameters, the noise on all observations can be modelled as the same. This means the log-intensities of the data streams can be modelled by the Gaussian process defined in \ref{eq:fandggp}
 
 \begin{equation} \label{eq:fandggp}
 \left[ \begin{array}{cc}
@@ -615,12 +648,8 @@ v_i(x) \end{array} \right] \sim \mathcal{G}\mathcal{P} \left( \left[ \begin{arra
 \mu_d  \\
 \mu_i \end{array} \right], \left[ \begin{array}{cc}
 K_f + K_g & K_f  \\
-K_f  & K_f \end{array} \right] \right)
+K_f  & K_f  \end{array} \right] + \sigma^2 \mathbf{I} \right)
 \end{equation}
-
-
-
-An increase in correlation could be modelled by an increase in the output scale of \(g\)'s covariance
 
 
 
