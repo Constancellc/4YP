@@ -27,7 +27,14 @@
 \usepackage{titlesec}
 \titleformat{\chapter}[display]   
 {\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}   
-\titlespacing*{\chapter}{0pt}{-60pt}{15pt}
+\titlespacing*{\chapter}{0pt}{10pt}{15pt}
+
+% This stops a new page from being created
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\chapter}{\clearpage}{}{}{}
+\makeatother
+
 
 % This changes the form of the chapter title
 \usepackage[T1]{fontenc}
@@ -35,6 +42,11 @@
 \newcommand{\hsp}{\hspace{20pt}}
 \titleformat{\chapter}[hang]{\LARGE\bfseries}{\thechapter\hsp}{0pt}{\LARGE\bfseries}
 \titleformat{\section}[hang]{\large\bfseries}{\thesection\hsp}{0pt}{\large\bfseries}
+% For table and figure
+\usepackage[font=small,labelfont=bf,tableposition=top]{caption}
+\DeclareCaptionLabelFormat{andtable}{#1~#2  \&  \tablename~\thetable}
+
+
 
 % This lets us use double spacing
 \usepackage{setspace}
@@ -74,46 +86,54 @@ Everyone knows you write the intro last....
 
 
 \section{SIGACTS Data}
-This report examines the significant actions, or SIGACTS, log from the Afghanistan War released as part of wikileaks (ref). This records the type, time and place of every registered incident it should be noted that this will represent only a subset of the deaths which occurred throughout the period. Specifically this report focuses on two data streams - the direct and indirect fire rates. 
+This report examines the SIGACTS data, which logs all the significant actions throughout ***, released as part of wikileaks (ref).
 
-These take include both friendly and enemy action, direct fire is when a line of sight is available to the shooter blah.
+This records the type, time and place of every registered incident; an example entry is shown in Table \ref{tab:sigactseg}. 
+
+%Both friendly and enemy action events are recorded, and it should be noted that subset
+\begin{table}[]
+\centering
+\caption{Example log from the SIGACTs data}
+\label{tab:sigactseg}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+\bf{Date} & \bf{Category} & \bf{District} & \bf{Location} &  \bf{Province} & \bf{Region} & \bf{Type} \\ \hline
+01/01/2006 & IED Found/Cleared & Zhari & 31.6x65.4 & Kandahar & RC SOUTH & Explosive Hazard \\ \hline
+\end{tabular}
+\end{table}
+
+Specifically this report focuses on two specific 'categories' of event: the direct and indirect fire incidents. Direct fire is the label given to any attack in which a line of sight is available to the shooter, while indirect fire includes ballistic missiles and other weapons for which a line of sight is not required.
+
+These were chosen due to the their abundance, providing a large and meaningful dataset, as well as their interesting relationship. The frequency of these events, binned by day, are shown in Figure \ref{fig:sigactsdata}. It should be noted that the y-axis has been restricted, concealing the number of direct and indirect fire events on day 1328, which are ?? and ?? respectively. This corresponds to 20th August 2009, the date of the Afghanistan elections; for the rest of the report this date shall be considered anomalous and removed from the data set.
 
 \begin{figure}
 \centering
-\includegraphics{plotdata.png}
+\includegraphics{plot_data.png}
 %[width=17cm]
-\caption{Direct and Indirect incidents by day}
+\caption{Direct and Indirect Fire incidents by day}
 \label{fig:sigactsdata}
 \end{figure}
 
-\section{Nonhomogenous Poisson Processes}
+\section{Modelling}
 
+This report aims to use statistical techniques to model and analyse the two data streams throughout the period. The problem can be considered one of regression, the process of determining the relationship \(f\) between inputs \(\mathbf{x}\) and noisy outputs \(\mathbf{y}\). In this case \(\mathbf{y}\) will be a training subset of the data set, or a set of observations of the data at discrete times. The remaining data can be used as a testing set, to evaluate the success of a model.
 
+If the system dynamics are well understood parametric modelling is the natural course, where the form of model (for example, quartic) is chosen and the data is used to optimise the parameters. However these models have a limited expressivity; if the form of model chosen is not appropriate a good fit is impossible. As there is no obvious choice of model in this case, parametric modelling will not be explored in this report.
 
-\section{Non-Parametric Regression}
+Contrastingly, non-parametric models have an expressivity which grows with the number of observations. It is always possible for the resulting function to pass through all of the training data, although in this may not be desirable. Although the form of the model is not fixed, users can incorporate traits that they believe the function to have, for example smoothness. 
 
-Regression is the process of determining the relationship f between inputs x and noisy output y; which is assumed to contain both a deterministic component f(x) and a stochastic one.
+%This report will focus primarily on Gaussian and Cox Processes
 
-Given a set of observations D dihfshfs compute the posterior p(f | D) 
-
-
-...
-
-If the system dynamics are well known we could chose to fit with a parametric model and use the data to optimise the parameters. The problem with these models is their limited expressivity, we must be select an order for our polynomial up front and there is no guarantee that it will be able to fit the data appropriately.
-
-Non-Parametric models have an expressivity which grows with the number of observations, meaning it is always possible for the resulting function to go through all of the training data (although this may not be appropriate). 
-
-
-Allow us to say something about the function eg.smooth-ness
+%\subsection{Stochastic Processes}
+%hi
 
 \chapter{Literature Review}
-I can't be bothered to do this now.
+A lot of work has already been done....
 
-\section{Gaussian Processes}
+\section{Gaussian / Log Gaussian / Cox Processes}
+This report begins by focusing on Gaussian Processes, which are defined extensively in \textit{Rasmussen and Williams, 2006} \cite{GP4ML}. Their use in modelling time series data is introduced by \textit{Roberts et. al, 2012} in \cite{GP-robots}, and the idea of modelling multiple data streams with one process is covered in \cite{multi-outputGP}.
 
-\section{LGCPs}
-
-\section{}
+The concept of Log Cox Gaussian Processes are introduced by \textit{M\o ller et. al, 1998} \cite{LGCP-moller} and their use in spatial and spatio-temporal data is covered in \cite{LGCP-diggle}. Using Log Cox Gaussian Processes to make predictions in the presence of changepoints is discussed by \textit{Garnet et. al} in \cite{changepoint-prediction}.
 
 \chapter{Gaussian Processes}
 
@@ -171,12 +191,12 @@ One of the main attractions of the Gaussian process framework is its computation
 
 \singlespacing
 
-\begin{equation} \ref{eq:GPmean}
+\begin{equation} \label{eq:GPmean}
 \mathbf{m_* = \mu (x_*) + K(x_* ,x) K(x,x)^{-1} (y(x) - \mu (x))}
 \end{equation}
 
-\begin{equation} \ref{eq:GPvar}
-\mathbf{ C_* = K(x_*,x_*)-K(x_*,x) K(x,x)^{-1} K(x_*,x)}^{T}
+\begin{equation} \label{eq:GPvar}
+\mathbf{C_* = K(x_*,x_*)-K(x_*,x) K(x,x)^{-1} K(x_*,x)}^{T}
 \end{equation}
 
 \doublespacing
@@ -229,6 +249,7 @@ ln(L(\mathbf{x} | \boldsymbol{\theta})) = - \frac{p}{2} ln(2\pi) - \frac{1}{2} l
 \doublespacing
 
 As dependencies between the direct and indirect fire incidents has not been considered, there will be a set of hyper-parameters for each of the data streams. \par
+
 % I hate everything not sure i should write about grid search
 Optimization algorithms can compute the local minima given a function and a starting point, but it is difficult to determine when a global minima has been found. Given that the problem is in \(\mathds{R}^4\), a reasonable result should be obtained by using a grid search. This is where the optimiser is run repeatedly on using a \textit{grid} of starting points which span a range of each hyper-parameter. The lowest scoring result of these optimisations is assumed to be the global minimum. \par
 
@@ -272,14 +293,30 @@ While the majority of the data set is within the 2 standard deviation points, th
 
 % Also something about the direct failing to capture some characteristics near the end of the period
 
-A poisson point process would be a more natural model for this data as this would only put weight on positive integer numbers. These are defined by a single parameter \(\lambda\), if this is allowed to vary with time the process is labelled non-homogenous. 
+ 
 
 %Some bridge to the next chapter
 
 \chapter{Log Cox Gaussian Processes}
 
-% Poisson processes
+\section{Poisson Point Processes}
+The Poisson distribution is defined only over discrete natural numbers, and expresses the probability of a given number of events occurring in a fixed interval of time. It is defined by \ref{eq:poisson}, where \(\lambda\) is the expected number of events in a time interval, and \(x\) is the actual number observed. \cite{Barber}
 
+\begin{equation}\label{eq:poisson}
+\mathcal{P}_o (x;\lambda) \implies p(x=k|\lambda) =  \frac{1}{k!} e^{-\lambda} \lambda^k
+\end{equation}
+
+A poisson point process is a natural extension of this, used for modelling instances of on/off events, where the number of events on a given day is modelled as a draw from some underlying Poisson distribution. \cite{Gregory} These are defined by a single parameter \(\lambda\) and the likelihood of a set of observations \(\mathbf{x}=[x_1,...,x_n]^T\) is given by:
+
+\begin{equation}
+p(x_1,...,x_n|\lambda) = \prod_{i=1}^{n} p(x_i|\lambda)
+\end{equation}
+
+This would be a more natural model for the SIGACTs data, as it would only put weight on positive integer numbers. 
+
+%These are defined by a single parameter \(\lambda\), if this is allowed to vary with time the process is labelled non-homogenous.
+
+\subsection{Cox Processes}
 A Cox process is essentially a non-homogenous Poisson point process where the underlying intensity \(\lambda\) is itself a stochastic process. In a Log Cox Gaussian process (LGCP) we assume that the log-intensity of the point process is a GP. 
 
 \begin{equation} \label{eq:LGCPsetup}
@@ -311,7 +348,7 @@ p(\boldsymbol{\theta}) = \delta(\boldsymbol{\theta} - \hat{\boldsymbol{\theta}})
 \end{equation}
 
 \begin{equation} \label{eq:LCGPposterior2}
-p(\mathbf{v | D}) = \frac{p(\mathbf{D|v})p(\mathbf{v}|\hat{\boldsymbol{\theta}}) }{\int{p(\mathbf{D|v})p(\mathbf{v}|\hat{\boldsymbol{\theta}}) d\mathbf{v}}}
+p(\mathbf{v | D}) = \frac{p(\mathbf{D|v})p(\mathbf{v}|\boldsymbol{\theta}=\hat{\boldsymbol{\theta}}) }{\int{p(\mathbf{D|v})p(\mathbf{v}|\boldsymbol{\theta}=\hat{\boldsymbol{\theta}}) d\mathbf{v}}}
 \end{equation}
 
 \doublespacing
@@ -325,12 +362,12 @@ p(\mathbf{D|v}) = \prod_{i=1}^{m} \mathcal{P}_o (y_i, e^{v_i})
 \end{equation}
 
 \begin{equation}
-p(\mathbf{v}|\hat{\boldsymbol{\theta}}) = \frac{1}{\sqrt{(2\pi)^{m} |\hat{\boldsymbol{\Sigma|}}}} exp(- \frac{1}{2} \mathbf{(v}-\hat{\boldsymbol{\mu}})^{T}\hat{\boldsymbol{\Sigma}}^{-1}(\mathbf{v}-\hat{\boldsymbol{\mu}}))
+p(\mathbf{v}|\boldsymbol{\theta}=\hat{\boldsymbol{\theta}}) = \frac{1}{\sqrt{(2\pi)^{m} |\hat{\boldsymbol{\Sigma|}}}} exp(- \frac{1}{2} \mathbf{(v}-\hat{\boldsymbol{\mu}})^{T}\hat{\boldsymbol{\Sigma}}^{-1}(\mathbf{v}-\hat{\boldsymbol{\mu}}))
 \end{equation}
 
 \doublespacing
 
-The denominator of \ref{eq:LCGPposterior} is intractable, so an approximation is needed in order to compute the posterior. This report focuses on Laplace's approximation, where the integrand \(P(\mathbf{x})\) is assumed to be gaussian and maximised at \(\mathbf{x=x_0}\). Equations \ref{eq:laplaceaprrox} and \ref{eq:laplaceaprrox2} give the form of the approximation. \cite{Mackay} When applied to the expression \(\int{\{p(\mathbf{D|v}) p(\mathbf{v}|\hat{\boldsymbol{\theta}})\} d\mathbf{v}} \) the result is only evaluated at the maximum \(\hat{\mathbf{v}}\) and therefore independent of the values \(v_i\). Therefore the maxima of the posterior and the product \(p(\mathbf{D|v}) p(\mathbf{v}|\hat{\boldsymbol{\theta}})\) are at the same location.
+The denominator of \ref{eq:LCGPposterior} is intractable, so an approximation is needed in order to compute the posterior. This report focuses on Laplace's approximation, where the integrand \(P(\mathbf{x})\) is assumed to be gaussian and maximised at \(\mathbf{x=x_0}\). Equations \ref{eq:laplaceaprrox} and \ref{eq:laplaceaprrox2} give the form of the approximation. \cite{Mackay} When applied to the expression \(\int{\{p(\mathbf{D|v}) p(\mathbf{v}|\boldsymbol{\theta}=\hat{\boldsymbol{\theta}})\} d\mathbf{v}} \) the result is only evaluated at the maximum \(\hat{\mathbf{v}}\) and therefore independent of the values \(v_i\). Therefore the maxima of the posterior and the product \(p(\mathbf{D|v}) p(\mathbf{v}|\boldsymbol{\theta}=\hat{\boldsymbol{\theta}})\) are at the same location.
 
 \singlespacing
 
@@ -485,8 +522,6 @@ There are now 6 hyper-parameters to be found, which are summarised in Table \ref
 
 Multivariate normal distributions allow simple analysis of the correlation between two randomly distributed variables. If the joint distribution of the direct and indirect fire incidents can be expressed as a 2-D gaussian, as in \ref{eq:2dmvg}, then the correlation coefficient can be approximated as \ref{eq:2dcorrelation}.
 
-Maximum likelihood can be used to find the best fitting 2D covariance matrix across the entire data set, the result of which is shown in \ref{fig:correlation}
-
 \begin{equation} \label{eq:2dmvg}
 \mathcal{N} \left( \left[ \begin{array}{cc}
 \mu_x \\
@@ -499,12 +534,18 @@ Maximum likelihood can be used to find the best fitting 2D covariance matrix acr
 \alpha = \frac{\sigma_{xy}}{\sqrt{\sigma_{x}^2 \sigma_{y}^2}}
 \end{equation}
 
+Maximum likelihood can be used to find the best fitting 2D covariance matrix across the entire data set, the result of which is shown in \ref{fig:correlation}. This predicts a correlation of \(\alpha \approx 0.4755\).
+
 \begin{figure}
 \centering
 \includegraphics[width=12cm]{direct_indirect_correlation.png}
 \caption{caption me}
 \label{fig:correlation}
 \end{figure}
+
+% Some positive correlation obvious, also i haven't given the figure yet
+
+One major limitation of this method is that the covariance assigns probability mass to negative numbers. A natural extension might be to fit the 2D covariance to the log-observations and then transform the ellipse with an exponential, the results of which are illustrated in Figure\ref{lcorrelation}. Although the covariance is now constrained to be positive, the ellipse has become distorted to the extent that \ref{eq:2dcorrelation} will no longer apply, and the raw correlation between the log-direct and log-indirect fire incidents isn't helpful.
 
 \begin{figure}
 \centering
@@ -513,8 +554,13 @@ Maximum likelihood can be used to find the best fitting 2D covariance matrix acr
 \label{fig:lcorrelation}
 \end{figure}
 
+While the gaussian empirical correlation may not be strictly accurate, it is still reasonable to assume the true correlation is close to this value. Therefore, the latin hypercube need only be used for the other hyperparameters with the empirical value for correlation at every start point. This will reduce the number of start points necessary to ensure good coverage of the probability space, while still allowing the optimal value of correlation to be learned.
 
-The optimisation problem is now in \(\mathds{R}^{2N+6}\), meaning the size of the training data used needs to be kept relatively low to avoid excessive computation time. If the training set is too small, there is a risk the model will not capture all features of the data. To ensure this isn't happening regression can be performed on multiple independent training sets, if consistent models are predicted then the data set was large enough.
+% Also conditioning errors 
+
+The optimisation problem is now in \(\mathds{R}^{2N+6}\), meaning the size of the training data used needs to be kept relatively low to avoid excessive computation time. The size of the set is also limited by the necessary gap between observations. If training data points are too close together the corresponding rows of the covariance become very similar, and the matrix becomes poorly conditioned meaning the inverse cannot be found. \par
+
+If the training set is too small, there is a risk the model will not capture all features of the data. To ensure this isn't happening regression can be performed on multiple independent training sets, if consistent models are predicted then the data set was large enough.
 
 % ^ SHOULD I DO SOMETHING ACTUALLY ABOUT IT?
 
@@ -554,14 +600,13 @@ The predictions produced for a training sample of 70 points are shown in Figure 
 \end{tabular}
 \end{table}
 
-%%%%!!!
-Something about what the predictions look like. 
+This model appears to capture the behaviour of the data set much more successfully than the previous one, which didn't incorporate correlation between the sets. This may be largely due to the model for each data stream having effectively twice as many data training points. There are also time complexity advantages to this model, as the optimization process only has to happen once.
+
+% Also, negative stuff?
 
 \chapter{Changepoints}
 
 So far this report has focused on finding a single of hyper-parameters which can accurately describe the entire dataset. However, as the period spans four years it's likely that the system dynamics change at some point during the conflict.
-
-
 
 Changepoints can be incorporated into regression models at the expense of added hyperparameters, and hence complexity.
 
@@ -587,20 +632,81 @@ c & for \text{ } x_1, x_2 \geq x_c \\
 
 Two new hyperparameters have been introduced: the scale factor \(c\) and the changepoint location \(x_c\) which, as an index, must be integer. 
 
-In order to asses the suitability of this model it's useful to look at the variation of model evidence with changepoint location; if the sudden change in output scale model is suitable there should be a sharp peak at one location and every other position should be comparably unfavourable. 
+The integer constraint of the changepoint location means it cannot be optimised in the same way as the other parameters, using a gradient search. One possible solution is to try every possible location at each evaluation of the model evidence however, given the number of optimization iterations necessary, this would lead to unacceptable computation times.
 
-The results for the SIGACTSs data is shown in figure \ref{fig:oscpvariation}. This shows that a relatively similar probability is assigned to every changepoint location, suggesting that a sudden change in output scale model is not a good fit for the data. 
+Another option is to iteratively optimize over the changepoint location, then the other parameters until the change in prediction becomes smaller than some predefined constant. This means for every start point from the latin hyper-cube the most likely changepoint will be found, and then used for the first round of optimization. 
+
+For each start point we can compute the posterior \(p(x_c | D, \boldsymbol{\theta})\) where \(D\) is the training data set, \(\boldsymbol{\theta}\) is the vector of the other hyper-parameters which are the suboptimal values selected by the latin hypercube. As \(x_c\) is an index the posterior the marginal takes the form of a discrete sum, as described in \ref{eq:xcposterior}, where the joint distribution \(p(D,\boldsymbol{\theta},x_c)\) is proportional to the quantity maximised previously in equation \ref{eq:GPfmin}.
+
+\begin{equation} \label{eq:xcposterior}
+p(x_c | D, \boldsymbol{\theta}) = \frac{p(D,\boldsymbol{\theta},x_c)} {\displaystyle \sum_{i=1}^{n} p(D,\boldsymbol{\theta},x_c = t_i)}
+\end{equation}
+
+Figure \ref{fig:oscpvariation} shows this computed posterior at several stages in the optimisation process. Every 5 iterations this distribution is computed and the most likely value used for the changepoint location for the next round of optimisation. As the other parameters become more optimal the probability mass becomes more concentrated at a single location, which should be expected as this is the value around which the other variables are being optimised. This is the results from the most favourable of the start points selected by the latin hypercube.
+
+The sudden drop-offs in the later distributions occur when the later changepoints result in poorly conditioned covariance matrices. When the optimisation is complete the covariance is poorly conditioned at almost every changepoint location besides the chosen one, meaning it is hard to quantify the certainty with which a changepoint is chosen. It should also be noted that due to the difficulty computing the later prior values, these distributions are not correctly normalised.
 
 \begin{figure}
 \centering
-\includegraphics[width=12cm]{oscpvariation.png}
+\includegraphics[width=16cm]{learnchangea.png}
 \caption{Variation of likelihood with Changepoint location}
 \label{fig:oscpvariation}
 \end{figure}
 
+% This paragraph needs re-writing
+While there is a consistent peak at around 400 days this is only marginally more likely than it's surrounding values. Perhaps more alarmingly, as the optimisation progresses the peak doesn't become more defined. This suggests that this sudden changepoint model might not be a good fit for the data.
+
+The resulting model is shown in Figure 5.2, a longer length scale and a higher correlation with respect to the previous model has been chosen. While the results still look reasonable the model evidence is lower than without the changepoint, possibly because the longer length scale is failing to capture all behaviour. 
+%%% CAN"T WORK OUT HOW TO GET LABEL TO WORK PROPERLY
+
+  \begin{figure}[!ht]
+    \centering
+    \includegraphics[width=11cm]{LGCP_OSCPresults.png}
+    \qquad
+    \doublespacing
+    \begin{tabular}[b]{cc}
+    \multicolumn{2}{c}{\textbf{Hyperparameters}}                                            \\ \hline
+      \(\rho_1\)                    & 1.0886                \\                       
+\(\rho_2\)                     & 2.5159                           \\            
+\(c\)                               & 1.3279                                      \\ 
+\(x_c\)                        & 374                                         \\ 
+\(l\)                               & 101.14                                      \\  
+\(\sigma_d^2\) & \(4.7582 \times 10^{-4}\) \\ 
+\(\sigma_i^2\) & \(4.2255 \times 10^{-4}\) \\ 
+\(\alpha\)                      & 0.781              \\                      
+    \end{tabular}
+    \captionlistentry[table]{A table beside a figure}
+    \captionsetup{labelformat=andtable}
+    \caption{Results for a model with direct fire output scale changepoint}
+  \end{figure}
+(scores 26.644, 15.3058, 0.0284, 0.0240)
+
+
 \section{Sudden Change in Correlation}
 
-For a change in correlation a different approach is needed in order to ensure a positive definite covariance.  
+The previous model assumes a constant value of correlation between the two data streams across the changepoint. This may not be appropriate, inspection of the raw data in Figure \ref{fig:sigactsdata} appears to show increased disparity of the data streams in the later half of the time period. 
+
+When the empirical correlation of the data streams are calculated separately for the first and second halves it is found that \(\rho_{1^{st} half} \approx 0.6077 \) and \(\rho_{2^{nd} half} \approx 0.4913\), confirming that the correlation appears to change. This difference is illustrated in Figure \ref{fig:halfcorrelation}, which plots the covariance ellipses for the two halves separately.  \par
+ 
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth}
+	\centering
+	\includegraphics[width=8.5cm]{halfcorrelation1.png}
+  	\caption{First Half}
+  	\label{fig:sub1}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  	\centering
+  	\includegraphics[width=8.5cm]{halfcorrelation2.png}
+  	\caption{Second Half}
+ 	 \label{fig:sub2}
+\end{subfigure}
+\caption{Empirical correlation of the data in two halves}
+\label{fig:halfcorrelation}
+\end{figure}
+
+A sudden change in correlation can not be treated in the same way as a change in output scale; a step change in the value used would result in a covariance matrix that wasn't positive definite.
 
 Instead of modelling the two data streams directly it makes sense to model the indirect fire intensities and then the difference between the two. This is equivalent to expressing the log intensities \(v_d\) and \(v_i\) as a linear combination of two independent functions \(f\) and \(g\) which are defined in \ref{eq:ccpfandg}.
 
@@ -639,7 +745,7 @@ k_g(x_1,x_2) = \rho_2 \text{ }exp\{\frac{(x_1-x_2)^2}{2 l_2^2}\} \text{ } a(x_1,
 
 As the training data consists of observations of direct and indirect incidents, the mean vector and covariance matrix need to be transformed into this form. For a transformation of the form \(\mathbf{y}= \mathbf{M} \mathbf{x}\) these arrays are given by \(\boldsymbol{\mu_y}= \mathbf{M}\text{ }\boldsymbol{\mu_x}\) and \(\mathbf{cov_y}= \text{ }\mathbf{M}\text{ } \mathbf{cov_x} \text{ } \mathbf{M}^{T}\) (REF?) \par
 
-The observations can also be assumed to be noise corrupted. In previous models maximum likelihood estimation has selected very similar values for the noise variance of the individual data streams. Therefore, in the interests of reducing the number of hyper-parameters, the noise on all observations can be modelled as the same. This means the log-intensities of the data streams can be modelled by the Gaussian process defined in \ref{eq:fandggp}
+The observations can also be assumed to be noise corrupted. In previous models maximum likelihood estimation has selected very similar values for the noise variance of the individual data streams. Therefore, in the interests of reducing the number of hyper-parameters, the noise on all observations can be modelled as the same. This means the log-intensities of the data streams can be modelled by the Gaussian process defined in \ref{eq:fandggp}. These equations are in the familiar LGCP form, so we can optimise over the hyperparameters in the same fashion as the previous model. 
 
 \begin{equation} \label{eq:fandggp}
 \left[ \begin{array}{cc}
@@ -651,31 +757,72 @@ K_f + K_g & K_f  \\
 K_f  & K_f  \end{array} \right] + \sigma^2 \mathbf{I} \right)
 \end{equation}
 
+The evolution of the likelihood variation of changepoint is shown in Figure \ref{fig:cccpvariation}. This time a much more convincing peak at around 800 days is chosen, although conditioning errors still prevent the certainty of the final location being quantified. With each iteration less probability mass is being assigned to other changepoint values, which should be expected as the other variables are being optimised around the chosen value. This more reassuring plot suggests that a change in correlation may fit the data better than a change in output scale. \par
 
-
+% Also, changepoint in much more expected place
 
 \begin{figure}
 \centering
-\includegraphics[width=12cm]{ccpvariation.png}
+\includegraphics[width=16cm]{learnchange.png}
 \caption{Variation of likelihood with Changepoint location}
-\label{fig:ccpvariation}
+\label{fig:cccpvariation}
 \end{figure}
+
+The results of this model are shown in Figure 5.5, appearing to fit the data much better than the output scale changepoint model did. It is interesting to note that the length scale chosen for the difference function is more than twice as long as the one chosen for indirect fire.
+
+%more about results
+
+%% LABELLING PROBLEM WARNING NUMERO 2
+  \begin{figure}[!ht]
+    \centering
+    \includegraphics[width=11cm]{LGCPCCPresults.png}
+    \qquad
+    \doublespacing
+    \begin{tabular}[b]{cc}
+    \multicolumn{2}{c}{\textbf{Hyperparameters}}                                            \\ \hline
+      \(\rho_1\)                    & 0.3492                \\                       
+\(\rho_2\)                     & 0.2285                           \\            
+\(c\)                               & 2.8076                                      \\ 
+\(x_c\)                        & 874                                         \\ 
+\(l_1\)                               & 37.6009                                      \\  
+\(l_2\) & 76.8452 \\ 
+\(\sigma^2\) & \(7.1044 \times 10^{-4}\) \\ 
+& \\
+    \end{tabular}
+    \captionlistentry[table]{A table beside a figure}
+    \captionsetup{labelformat=andtable}
+    \caption{Results for a model with direct fire output scale changepoint}
+  \end{figure}
+(scores 25.2765, 13.2748, 0.0854, 0.0482)
+
+This model also saw a reduction in time complexity, probably due to the smaller number of hyperparamters. Unfortunately the training data set is still limited to the same size by conditioning errors, so this reduction in running time doesn't allow an increase in training data points.
+
+\subsection{Incorporating Change in Mean}
+
+Given that this model assumes a change in the direct fire data stream, a constant mean function no longer seems appropriate. Currently the mean is set as the average observed value, but clearly the values after the changepoint are typically higher than those before. In the interests of not adding hyper-parameters a simple solution would be to model the mean function as a step change, as described in equation \ref{eq:cpmeaneq} where \(x_c\) is the time of the change point and \(n\) is its index in the \(N\)-length training data set.
+
+\begin{equation} \label{eq:cpmeaneq}
+\mu_d = \begin{cases}
+\frac{1}{n} \displaystyle \sum_{i=1}^{n} log_e(y_i) & for \text{ } x \leq x_c \\
+\frac{1}{N-n} \displaystyle \sum_{i=1}^{N-n} log_e(y_i) & for \text{ } x > x_c \\ 
+\end{cases}
+\end{equation}
+
+
 \chapter{Testing}
 
 % I need to add something about my in test model - i don't remember exactly what it was called which might be an issue .
 
-It's useful to have a formal method of comparing the success of models
+It's useful to have a formal method of evaluating and comparing the success of models. Given a set of predictions of mean and variance and a testing data set we want to assign a score reflecting the success of the model. It is important that the testing data set is independent of the training set in order to fairly analyse the model.
 
-Given a testing data set composed of observations \(\mathbf{z_i}\) containing the number of direct and indirect fire rates on the \(i\)th day, the first task is to identify the model predictions at that time step.
+Given testing data composed of observations \(\mathbf{z_i}\) containing the number of direct and indirect fire rates on the \(i\)th day, the first task is to identify the model predictions at that time step. For the GP model this is trivial as predictions can be produced for an arbitrary set of inputs, so all integer days in the range can be forecasted, meaning the mean and variance corresponding to the test observation needs just to be selected. 
 
-It is important that the testing data set is independent of the training set in order to fairly analyse the model. As only a small percentage of the 
+Whereas, for the LGCP model predictions for the mean and variance are only generated at time steps corresponding to the training data. The simplest solution is to linearly interpolate the mean and variance prediction for the \(i\)th day based on the two nearest predictions; providing the predictions are continuous this should provide a reasonable result. 
 
-For the GP model this is trivial as predictions can be produced for an arbitrary set of inputs, so all integer days in the range can be forecasted meaning the mean and variance corresponding to the test observation needs just to be selected. 
+However, it should be noted that as only a small percentage of the SIGACTs data was used for training, the test data set can potentially be very large. This means that the same two predicted points may be used to produce comparisons for more than 10 of the observations, and the interpolation errors may cause LGCP models to unjustly lower than GP models.
 
-Whereas, for the LGCP model predictions for the mean and variance are only generated at time steps corresponding to the training data. 
-
-\section{Test Model}
-grrr
+%\section{Test Model}
+%grrr
 
 \section{Evaluation Methods}
 The mean square error is a crude but effective evaluation tool, which measures the square distance between the training data observations and the predicted mean at that time step and sums over all testing data. The calculation is given in \ref{eq:mse}, where an N-length set of testing data has been used containing observations \(y_i\) corresponding to known inputs \(x_i\). This would produce an index of the success of the model for a single data stream, meaning scores for both the direct and indirect incident data would be obtained in each case. 
@@ -704,7 +851,7 @@ The units of the mean square error test are incidents\(^2\), so lower numbers ar
 \label{model-comparison}
 \begin{tabular}{ccccc}
 \multicolumn{1}{l}{}                                       & \multicolumn{4}{c}{{\ul \textbf{Test}}}                                                                                                                                           \\
-\multicolumn{1}{c|}{\multirow{2}{*}{{\ul \textbf{Model}}}} & \multicolumn{2}{c|}{\textbf{Mean Square Error}}                                         & \multicolumn{2}{c|}{\textbf{Average Likelihood}}                                                         \\
+\multicolumn{1}{c|}{\multirow{2}{*}{{\ul \textbf{Model}}}} & \multicolumn{2}{c|}{\textbf{Mean Square Error}}                                         & \multicolumn{2}{c|}{\textbf{Model Evidence}}                                                         \\
 \multicolumn{1}{c|}{}                                      & \multicolumn{1}{c|}{\textit{Direct Fire}} & \multicolumn{1}{c|}{\textit{Indirect Fire}} & \multicolumn{1}{c|}{\textit{Direct Fire}} & \multicolumn{1}{c|}{\textit{Indirect Fire}} \\ \hline
 \multicolumn{1}{|c|}{\textbf{GP Model}}                    & \multicolumn{1}{c|}{29.1917}              & \multicolumn{1}{c|}{11.5186}                & \multicolumn{1}{c|}{0.0424}               & \multicolumn{1}{c|}{0.0691}                 \\ \hline
 \multicolumn{1}{|c|}{\textbf{Basic LGCP Model}}            & \multicolumn{1}{c|}{32.9365}              & \multicolumn{1}{c|}{15.4097}                & \multicolumn{1}{c|}{0.0476}               & \multicolumn{1}{c|}{0.0134}                 \\ \hline
@@ -719,6 +866,8 @@ The units of the mean square error test are incidents\(^2\), so lower numbers ar
 Not much of a report, but it's a start.
 
 \singlespacing 
+
+\newpage
 
 \bibliographystyle{plain}
 \bibliography{report}
