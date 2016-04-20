@@ -862,16 +862,79 @@ The predictions produced by this updated model are shown in Figure 5.6 and the v
 \label{fig:cmcpvariation}
 \end{figure}
 
+\chapter{Generating Predictions}
+
+In order to properly compare the results of the models explored in this report predictions need to be generated using a common set of test data inputs \(\mathbf{x_*}\), for which observations \(\mathbf{y}_*\) are available. If each model \(i\) is used to generate \(f_i(\mathbf{x_*})\) the relative success of the algorithms in predicting \(\mathbf{y}_*\) can be assessed. \par
+
+In this case the test inputs will be a vector of day numbers, and the models will try to predict the aggregate number of direct and indirect incidents that occurred on each of those days. The testing data should be independent of the model, so the days chosen can not have been used in the training data set of any of the models. Given the large amount of data available, this constraint is not restrictive. \par
+
+For the GP models evaluating \(f(\mathbf{x_*})\) is trivial; full probability density functions are already being generated for every day within the period. However, for the LGCP models mean and variance values are currently only being calculated for days corresponding to the training data. \par
+
+One possible work around is to linearly interpolate predictions from the two nearest available data points. Given the generally smooth varying nature of models this should return reasonable results, however this will not be accurate enough to distinguish between similar models. Therefore, given a LGCP model with chosen hyper-parameters predictions need to be generated for time steps not observed.
+%For fair comparisons, full predictions need to be generated for the test input times using the LGCP models.
+
+\section{LGCP Inference}
+
+Assume a LGCP model with chosen mean and covariance functions \(\hat{\mu}\) and \(\hat{k}\) which has been generated using training data \(\mathbf{D} = (x_i,\mathbf{y_i})\) for  \(i = 1,...,m\), where \(x_i\) represents the day of the \(i\)th observation and \(\mathbf{y_i}\) contains the number of direct and indirect fire incidents on that day. Now given a new set of inputs \(x_j\) where \(j = 1,...,n\) we want to predict the number of both type of incidents on the \(j\)th day, in other word we want to generate:
+
+\begin{equation}
+p(\mathbf{v | D}) = \frac{p(\mathbf{D|v})p(\mathbf{v}|\boldsymbol{\theta}) }{\int{p(\mathbf{D|v})p(\mathbf{v}|\boldsymbol{\theta}) d\mathbf{v}}}\end{equation}
+
+for a \(m+n\) length \(\mathbf{v}\) corresponding to both the observed and the test time inputs. For clarity sake we denote the new input vector \(\mathbf{x_*} = [x_i,....x_m,...,x_{m+n}]\) where the first \(m\) entries contain the times of the observed data, and the last \(n\) entries correspond to the test times. \par
+
+The likelihood term \(p(\mathbf{D|v})\) is independent of the new test times so still has the form which was used for model optimization, repeated for convenience in \ref{eq:LCGPinflik}. The prior \(p(\mathbf{v}|\boldsymbol{\theta})\) will contain terms of \(\mathbf{v}\) relating to both the training and test data inputs, and can be expressed in terms of \(\hat{\boldsymbol{\mu}}\) and \(\hat{\boldsymbol{\Sigma}}\), the mean vector and covariance matrix generated for the input vector \(\mathbf{x_*}\) using the chosen hyper-parameters.
+
+\singlespacing
+\begin{equation} \label{eq:LCGPinflik}
+p(\mathbf{D|v}) = \prod_{i=1}^{m} \mathcal{P}_o (y_i, e^{v_i})
+\end{equation}
+
+\begin{equation}
+p(\mathbf{v}|\boldsymbol{\theta}) = \frac{1}{\sqrt{(2\pi)^{m+n} |\hat{\boldsymbol{\Sigma|}}}} exp(- \frac{1}{2} \mathbf{(v}-\hat{\boldsymbol{\mu}})^{T}\hat{\boldsymbol{\Sigma}}^{-1}(\mathbf{v}-\hat{\boldsymbol{\mu}}))
+\end{equation}
+\doublespacing
+
+%Once again the marginal integral is intractable, but the Laplace approximation may not be suitable. This is because the variable \(\mathbf{v}\) could now be the length of the entire data set, in which case computing the hessian becomes incredibly computationally expensive. 
+
+Instead Monte-Carlo methods can be used, where the integrand is approximated by sampling one distribution and inputting the results into the other. The law of large numbers implies that if this is done enough times, and the results averaged then the approximation should be representative. The approximate marginal is given by:
+
+\begin{equation}
+\int{p(\mathbf{D|v})p(\mathbf{v}|\boldsymbol{\theta}) d\mathbf{v}} \approx \frac{1}{N} \displaystyle \sum_{k=1}^{N} p(\mathbf{D|v=v_k})
+\end{equation}
+
+where \(\mathbf{v_k}\) is a draw from the distribution \(\mathcal{N}(\mathbf{v_k};\hat{\boldsymbol{\mu}},\hat{\boldsymbol{\Sigma}})\), and \(N\) is some arbitrary large number. Due to the standard form of the prior distribution, sampling can be easily achieved using inbuilt functions in Matlab. The prediction problem then becomes 
+
+\begin{equation}
+\hat{\mathbf{v}} = \argmin_\mathbf{v}{\{  \mathcal{N}(\mathbf{v};\boldsymbol{\mu, \Sigma}) \text{  }\text{  } \displaystyle \prod_{i=1}^{m} \mathcal{P}_o (y_i, e^{v_i}) \text{  }\text{  } Zp^{-1} } \}
+\end{equation}
+
+where \(Z_p\) is the approximate marginal obtained using Monte Carlo integration. Note while there are only \(m\) poisson terms in this expression, the multivariate Gaussian is in \(\mathcal{R}^{n+m}\) as it features both training and testing inputs. \par
+
+It is simpler to maximise the log of this expression, as several terms may be neglected. Due to the fixed covariance and mean functions this optimization operation is significantly easier than those attempted earlier in this report. \par
+
+Figure \ref{fig:inference} shows an example result of this prediction procedure. This example was for one of the later LGCP models which incorporates a change point in covariance. The predicted mean and \(\pm 2 \sigma\) are plotted in blue for the direct and green for indirect, and the training data is plotted with x's. The predictions at test times are show in red for both data streams, with o's marking the predicted mean and error bars the \(\pm 2 \sigma\) limits. For graphical clarity only four test data points have been used in this example, but similar results can be obtained for much larger data sets.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=17cm]{prediction.png}
+\caption{Prediction for 4 test inputs using an LGCP model}
+\label{fig:inference}
+\end{figure}
+
+Although this graph only give the predicted values with some confidence region, it is possible to generate the full probability distribution for each predicted input. Figure \ref{fig:inference2} plots in red the full posterior for the predicted direct and indirect fire incident intensities for a single test day. It should be noted that these are (continuous) distributions of the poisson intensities, not the (discrete) distributions over the number of observed incidents. 
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=17cm]{prediction_dist.png}
+\caption{Full posterior predictions for one test input}
+\label{fig:inference2}
+\end{figure}
 
 \chapter{Testing}
 
 It's useful to have a formal method of evaluating and comparing the success of models. Given a set of predictions of mean and variance and a testing data set we want to assign a score reflecting the success of the model. It is important that the testing data set is independent of the training set in order to fairly analyse the model. \par
 
-Given testing data composed of observations \(\mathbf{z_i}\) containing the number of direct and indirect fire rates on the \(i\)th day, the first task is to identify the model predictions at that time step. For the GP model this is trivial as predictions can be produced for an arbitrary set of inputs, so all integer days in the range can be forecasted, meaning the mean and variance corresponding to the test observation needs just to be selected. \par 
-
-Whereas, for the LGCP model predictions for the mean and variance are only generated at time steps corresponding to the training data. The simplest solution is to linearly interpolate the mean and variance prediction for the \(i\)th day based on the two nearest predictions; providing the predictions are continuous this should provide a reasonable result. \par
-
-However, it should be noted that as only a small percentage of the SIGACTs data was used for training, the test data set can potentially be very large. This means that the same two predicted points may be used to produce comparisons for more than 10 of the observations, and the interpolation errors may cause LGCP models to unjustly lower than GP models. \par
+Given testing data composed of observations \(\mathbf{z_i}\) containing the number of direct and indirect fire rates on the \(i\)th day, the first task is to identify the model predictions at that time step. All models presented in this report model the posterior distribution of the number of incidents with a gaussian, so these predictions will just be a mean and variance for each data stream at every testing time step. Once the predicted distributions for each of the models have been generated results can be directly prepared.
 
 A summary of the models produced in this report is given in Table \ref{tab:model-description}.
 
@@ -993,6 +1056,8 @@ The units of the mean square error test are incidents\(^2\), so lower numbers ar
 
 \chapter{Conclusion}
 Not much of a report, but it's a start.
+
+% Variations in amount of training data - in each LGCP case maximum used 
 
 \singlespacing 
 
