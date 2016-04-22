@@ -81,16 +81,17 @@ hi
 \pagebreak
 
 \chapter{Introduction}
-Everyone knows you write the intro last....
+\section{Background}
 
+In October 2001, in reaction to the 9/11 attacks, the United States invaded Afghanistan. Although only initially supported by only close allies, including the United Kingdom, they were joined by NATO in 2003. \par
 
+Operation Enduring Freedom lasted until the 31st December 2014, and was estimated to have lead to the deaths of at least 55,000 insurgents and 21,200 civilians.\cite{bodycount}
+
+On the 25th July 2010 WikiLeaks released over 75,000 secret US military reports detailing events in Afghanistan from 2004 to 2010. \cite{wikileaks} The publication was intended to provide the public with a more comprehensive understanding of the reality of the war in Afghanistan.
 
 \section{SIGACTS Data}
-This report examines the SIGACTS data, which logs all the significant actions throughout ***, released as part of wikileaks \cite{wikileaks}
+This report examines the SIGACTS data, which forms the base of the 'Afghan War Diary'. This comprises all the significant activities logged by coalition forces from January 2006 until March 2010. The type, time and place of every registered incident is recorded; an example entry is shown in Table \ref{tab:sigactseg}. 
 
-This records the type, time and place of every registered incident; an example entry is shown in Table \ref{tab:sigactseg}. 
-
-%Both friendly and enemy action events are recorded, and it should be noted that subset
 \begin{table}[]
 \centering
 \caption{Example log from the SIGACTs data}
@@ -125,29 +126,28 @@ Contrastingly, non-parametric models have an expressivity which grows with the n
 Chapter 3 of this report aims to use of Gaussian Processes to model the data, while Chapter 4 uses Log Cox Gaussian Processes. Chapter 5 investigates the presence of changepoints in the data, and Chapter 6 presents methods of evaluating and comparing the success of models. 
 
 \chapter{Literature Review}
-A lot of work has already been done....
+%A lot of work has already been done....
 
 \section{Gaussian / Log Gaussian / Cox Processes}
 This report begins by focusing on Gaussian Processes, which are defined extensively in \textit{Rasmussen and Williams, 2006} \cite{GP4ML}. Their use in modelling time series data is introduced by \textit{Roberts et. al, 2012} in \cite{GP-robots}, and the idea of modelling multiple data streams with one process is covered in \cite{multi-outputGP}.
 
 The concept of Log Cox Gaussian Processes are introduced by \textit{M\o ller et. al, 1998} \cite{LGCP-moller} and their use in spatial and spatio-temporal data is covered in \cite{LGCP-diggle}. Using Log Cox Gaussian Processes to make predictions in the presence of changepoints is discussed by \textit{Garnett et. al} in \cite{changepoint-prediction}.
 
+\section{Changepoints}
+hi
+
 \chapter{Gaussian Processes}
 
 While a probability distribution describes the properties of variables, a stochastic process governs the properties of functions. \\
-% ^ I think this should go earlier in the report....
 
 A Gaussian Process (hereafter referred to as a GP) is a distribution on the functions \(\mathbf{f}\) where any finite subset of function values are distributed multivariate gaussian. 
 %It can be thought of as a generalisation of the multivariate gaussian distribution to a potentially infinite number of variables.
-
-%A GP is completely defined by it's mean and covariance functions \(\mu (x)\) and \( k(x,x')\). 
 
 There are an infinite number of possible functions which pass through all of the training data points; the form of the resulting prediction is controlled by the choice of mean and covariance functions \(\mu (x)\) and \( k(x,x')\), which completely define the GP.
 
 \section{Mean and Covariance Function}
 
 Sensible choices for mean and covariance function are paramount in a model's success. The chosen functions may contain unknown parameters, to be marginalised later, however if the form of the equations is not suitable a good fit is impossible. \\ \par
-%\subsection{Mean Functions}
 
 The mean function represents the form a process is expected to take in the absence of any data, meaning it dictates the predictions in areas far away from any observations.
 
@@ -158,9 +158,6 @@ This is not suitable for this data set as a negative number of incidents is not 
 \begin{equation} \label{eq:GPmean}
 \mu (x) = \theta_1
 \end{equation}
-
-\par
-%\subsection{Covariance Functions}
 
 The covariance function dictates the strength of relationship between any two input points to the GP. The covariance function \(k\) is used to assemble the covariance matrix \(\mathbf{K}\) so that: 
 
@@ -247,7 +244,6 @@ ln(L(\mathbf{x} | \boldsymbol{\theta})) = - \frac{p}{2} ln(2\pi) - \frac{1}{2} l
 
 As dependencies between the direct and indirect fire incidents have not been considered, there will be a set of hyper-parameters for each of the data streams. \par
 
-% I hate everything not sure i should write about grid search
 Optimization algorithms can compute the local minima given a function and a starting point, but it is difficult to determine when a global minima has been found. Given that the problem is in \(\mathds{R}^4\), a reasonable result should be obtained by using a grid search. This is where the optimiser is run repeatedly on using a \textit{grid} of starting points which span a range of each hyper-parameter. The lowest scoring result of these optimisations is assumed to be the global minimum. \par
 
 \section{Results}
@@ -305,7 +301,7 @@ The Poisson distribution is defined only over (discrete) natural numbers, and ex
  p(x=k|\lambda) = \mathcal{P}_o (x;\lambda) = \frac{1}{k!} e^{-\lambda} \lambda^k
 \end{equation}
 
-A poisson point process is a natural extension of this, used for modelling instances of on/off events, where the number of events on a given day is modelled as a draw from some underlying Poisson distribution. \cite{Gregory} These are defined by a single parameter \(\lambda\) and the likelihood of a set of observations \(\mathbf{x}=[x_1,...,x_n]^T\) is given by:
+A poisson point process is a natural extension of this, used for modelling instances of point events, where the number of events on a given time interval is modelled as a draw from some underlying Poisson distribution, defined by a single parameter \(\lambda\). \cite{Gregory} The likelihood of a set of independent identically (Poisson) distributed observations \(\mathbf{x}=[x_1,...,x_n]^T\) is given by:
 
 \begin{equation}
 p(x_1,...,x_n|\lambda) = \prod_{i=1}^{n} p(x_i|\lambda)
@@ -804,8 +800,10 @@ The results of this model are shown in Figure 5.5, appearing to fit the data muc
     \end{tabular}
     \captionlistentry[table]{A table beside a figure}
     \captionsetup{labelformat=andtable}
-    \caption{Results for a model with direct fire output scale changepoint}
+    \caption{Results for a model with correlation changepoint}
   \end{figure}
+
+One notable difference between this model and its predecessors is its performance at the end of the data period. This is reassuring, given that the motivation for exploring the correlation changepoint was to model the apparent separation of the data streams in later years. The previous models all parameterised a constant correlation parameter which constrained the difference between the data stream predictions, and removing this has allowed more detail to be captured.
 
 This model also saw a reduction in time complexity, probably due to the smaller number of hyperparameters. Unfortunately the training data set is still limited to the same size by conditioning errors, so this reduction in running time doesn't allow an increase in training data points.
 
@@ -814,11 +812,6 @@ This model also saw a reduction in time complexity, probably due to the smaller 
 Given that this model assumes a change in the direct fire data stream, a constant mean function no longer seems appropriate; clearly the values after the changepoint are typically higher than those before it. Currently the prior mean is set to the mean of the observed data, it should be noted that this may not be the most likely estimate for the constant mean function but this approach has been adopted to simplify the computation. \par
 
 If the previous model was used for extrapolation, then the predicted values would quickly revert to the mean function. This means that if points from the end of the period were not included in the training data set, and these dates were predicted for the model would perform very poorly. \par
-
-% Extrapolation picture? would be good.....
-
-
-%%%
 
 In the interests of not adding hyper-parameters a simple solution would be to model the mean function as a step change, as described in equation \ref{eq:cpmeaneq} where \(x_c\) is the time of the change point and \(n\) is its index in the \(N\)-length training data set.
 
@@ -831,8 +824,7 @@ In the interests of not adding hyper-parameters a simple solution would be to mo
 
 Effectively the mean of the direct fire incidents before and after the changepoint are now being modelled as separate functions. This is not intuitive, but may result in a better fitting model. \par
 
-The predictions produced by this updated model are shown in Figure 5.6 and the variation in likelihood with changepoint location is shown in Figure \ref{fig:cmcpvariation}. It is interesting to note that this change has resulted in a significantly earlier changepoint, of a greater scale factor. 
-
+The predictions produced by this updated model are shown in Figure 5.6 and the variation in likelihood with changepoint location is shown in Figure \ref{fig:cmcpvariation}. 
 % THIRD WARNING ABOUT LABELLING, yawn....
   \begin{figure}[!ht]
     \centering
@@ -852,7 +844,7 @@ The predictions produced by this updated model are shown in Figure 5.6 and the v
     \end{tabular}
     \captionlistentry[table]{A table beside a figure}
     \captionsetup{labelformat=andtable}
-    \caption{Results for a model with direct fire output scale changepoint}
+    \caption{Results for a model with correlation + mean changepoint}
   \end{figure}
   
 \begin{figure}
@@ -861,6 +853,12 @@ The predictions produced by this updated model are shown in Figure 5.6 and the v
 \caption{Variation of likelihood with Changepoint location}
 \label{fig:cmcpvariation}
 \end{figure}
+
+The most significant difference between the models is the position of the changepoint, which the latter model predicts over a year earlier. This is especially interesting given that both models predict their respective changepoints with relative certainty and consistently. \par
+
+This could possibly indicate the existence of more than one changepoint, or that the sudden change model is ill-fitted to the evolution of the system. 
+
+% something else?
 
 \chapter{Generating Predictions}
 
@@ -894,9 +892,7 @@ p(\mathbf{v}|\boldsymbol{\theta}) = \frac{1}{\sqrt{(2\pi)^{m+n} |\hat{\boldsymbo
 \end{equation}
 \doublespacing
 
-%Once again the marginal integral is intractable, but the Laplace approximation may not be suitable. This is because the variable \(\mathbf{v}\) could now be the length of the entire data set, in which case computing the hessian becomes incredibly computationally expensive. 
-
-Instead Monte-Carlo methods can be used, where the integrand is approximated by sampling one distribution and inputting the results into the other. The law of large numbers implies that if this is done enough times, and the results averaged then the approximation should be representative. The approximate marginal is given by:
+The marginal integral is intractable, so an approximation method is necessary in order to compute the posterior. Monte-Carlo methods can be used, where the integrand is approximated by sampling one distribution and inputting the results into the other. The law of large numbers implies that if this is done enough times, and the results averaged then the expectation should be representative. The approximate marginal is given by:
 
 \begin{equation}
 \int{p(\mathbf{D|v})p(\mathbf{v}|\boldsymbol{\theta}) d\mathbf{v}} \approx \frac{1}{N} \displaystyle \sum_{k=1}^{N} p(\mathbf{D|v=v_k})
@@ -929,6 +925,8 @@ Although this graph only give the predicted values with some confidence region, 
 \caption{Full posterior predictions for one test input}
 \label{fig:inference2}
 \end{figure}
+% PAGES SORT IT OUT MOTHERFUCKER
+\newpage
 
 \chapter{Testing}
 
@@ -974,8 +972,6 @@ One way of doing this is to generate a test data set from a model with chosen hy
 \mathbf{y} \sim \mathcal{P}_o (e^{\mathbf{v}})
 \end{equation}
 \doublespacing
-
-% Give some examples of draws from test models
 
 \begin{figure}
 \centering
@@ -1040,7 +1036,7 @@ The units of the mean square error test are incidents\(^2\), so lower numbers ar
 \label{model-comparison}
 \begin{tabular}{ccccc}
 \multicolumn{1}{l}{}                                       & \multicolumn{4}{c}{{\ul \textbf{Test}}}                                                                                                                                           \\
-\multicolumn{1}{c|}{\multirow{2}{*}{{\ul \textbf{Model}}}} & \multicolumn{2}{c|}{\textbf{Mean Square Error}}                                         & \multicolumn{2}{c}{\textbf{Model Evidence}}                                                         \\
+\multicolumn{1}{c|}{\multirow{2}{*}{{ \textbf{Model}}, \(\mathcal{M}\)}} & \multicolumn{2}{c|}{\textbf{Mean Square Error}}                                         & \multicolumn{2}{c}{\textbf{Model Evidence}}                                                         \\
 \multicolumn{1}{c|}{}                                      & \multicolumn{1}{c|}{\textit{Direct Fire}} & \multicolumn{1}{c|}{\textit{Indirect Fire}} & \multicolumn{1}{c|}{\textit{Direct Fire}} & \multicolumn{1}{c}{\textit{Indirect Fire}} \\ \hline
 \multicolumn{1}{c|}{\textbf{1}}                    & \multicolumn{1}{c|}{29.1917}              & \multicolumn{1}{c|}{11.5186}                & \multicolumn{1}{c|}{0.0424}               & \multicolumn{1}{c}{0.0691}                 \\ \hline
 \multicolumn{1}{c|}{\textbf{2}}            & \multicolumn{1}{c|}{32.9365}              & \multicolumn{1}{c|}{15.4097}                & \multicolumn{1}{c|}{0.0476}               & \multicolumn{1}{c}{0.0134}                 \\ \hline
@@ -1051,13 +1047,51 @@ The units of the mean square error test are incidents\(^2\), so lower numbers ar
 \end{tabular}
 \end{table}
 
-% Maybe try the best fitting model on two independent sets of training data?
+Examining the numerical results immediately shows that there is no one model that scores best in all tests. \par
+
+In general probabilistic modelling involves a compromise between model complexity and expressivity; If a model is too simple then it will not capture all features of the function it is trying to model, while an overly complex model (one with too many parameters) will spread its probability mass over too large an area, meaning it will not predict anything will significant certainty. \par
+
+It is clear that \(\mathcal{M}=3\), the initial multi-output LGCP performs uniformly better than both \(\mathcal{M}=1,2\) which are the GP and single output LGCP models. This implies that moving to LGCPs and modelling both streams at once were both beneficial forms of added complexity. \par
+
+Contrastingly \(\mathcal{M}=4\), where an output scale changepoint was introduced performs unanimously worse than its predecessor. This may seem counter-intuitive, as with a scale factor of 1 the models become the same, but these added redundancies increase the model uncertainty. \par
+
+Models 5 and 6 took a different approach to modelling in order to better analyse the relationship between the two data streams, and capture a changepoint in their correlation. Unlike in \(\mathcal{M}=4\) the introduction of the changepoint has significantly improved the model evidence, suggesting that this is an appropriate model for the data, and that the added complexity has allowed the model to capture behaviour that it did not before. \par
+
+The difference between models 5 and 6 is in the mean function; \(\mathcal{M}=5\) uses a constant mean for each data series, while \(\mathcal{M}=6\) models a step change in the direct fire mean at the position of the changepoint. This adaptation drastically improved (nearly doubled) the model evidence for both data streams, although interestingly the mean square error increased slightly. 
+
+While it may appear obvious to select model 6 over 5, questions arise over the feasibility of the model; It is very hard to imagine an observable quantity undergoing a step change, especially one as drastic as that inferred by \(\mathcal{M}=6\). This \textit{could} be an example of a model which was designed to perform well in a test rather than meaningfully represent the data, which should be avoided. This increased score appears to indicate that the constant mean function is not optimal, if further work were to be carried out, a wider range of mean functions might be investigated. Smoother varying operators such as a sigmoid or linear function could be of use, although these come at the expense of added hyper-parameters (and therefore complexity). \par
+
+Although it is the only thing quantified here, the quality of fit is not the only criteria for a good model. For example, time complexity and consistency of predictions are also important. \par 
+
+By far the fastest model was \(\mathcal{M}=1\), the GP model, however this benefit is overshadowed by its drastically inferior fit. More notably, \(\mathcal{M}=5,6\) which directly modelled the difference between the data streams took significantly less time than \(\mathcal{M}=3,4\) which modelled the individual data streams. 
 
 
 \chapter{Conclusion}
-Not much of a report, but it's a start.
 
-% Variations in amount of training data - in each LGCP case maximum used 
+WILL WRITE A PROPER CONCLUSION ONCE I FIGURE OUT WHAT THE POINT WAS
+
+--------
+
+This report explored a subset of the SIGACTS data from the Afghanistan War. This dataset is the most detailed of its kind to be published, and modelling it may offer insight into the progression of the war. \par
+
+The first models explored were Gaussian Processes, and although these offered complete tractability they proved ill suited to modelling deaths which, as discrete variables, are constrained to natural numbers. \par
+
+Greater success was found using Log-Cox Gaussian Processes, which constrain predictions to be positive by placing the Gaussian Process prior on the log of the intensity function. These models were much more computationally expensive and therefore a very limited amount of training data could be used to generate the models. \par
+
+%Analysis of the correlation between the two data st
+
+%Changepoints were 
+
+% Motivation: data set
+
+% Explored models
+
+
+% Which worked best
+
+
+% Limitations: amount of training data 
+% scalable model?
 
 \singlespacing 
 
